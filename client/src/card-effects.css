@@ -1,0 +1,605 @@
+/* ============================================================
+   Card Mystery Realm — Holographic Card Effects
+   Ported directly from simeydotme/pokemon-cards-css (MIT)
+   https://github.com/simeydotme/pokemon-cards-css
+   ============================================================ */
+
+/* ── CSS variable defaults (driven by card-tilt.ts) ── */
+.drawn-card,
+.inv-card,
+.cat-card.owned,
+.detail-card {
+  --pointer-y: 50%;
+  --background-x: 50%;
+  --background-y: 50%;
+  --pointer-from-center: 0;
+  --pointer-from-top: 0.5;
+  --pointer-from-left: 0.5;
+  --card-opacity: 0;
+  --rotate-x: 0deg;
+  --rotate-y: 0deg;
+  --card-scale: 1;
+  --translate-x: 0px;
+  --translate-y: 0px;
+
+  /* sunpillar rainbow colours */
+  --sunpillar-1: hsl(2,   100%, 73%);
+  --sunpillar-2: hsl(53,  100%, 69%);
+  --sunpillar-3: hsl(93,  100%, 69%);
+  --sunpillar-4: hsl(176, 100%, 76%);
+  --sunpillar-5: hsl(228, 100%, 74%);
+  --sunpillar-6: hsl(283, 100%, 73%);
+  --sunpillar-clr-1: var(--sunpillar-1);
+  --sunpillar-clr-2: var(--sunpillar-2);
+  --sunpillar-clr-3: var(--sunpillar-3);
+  --sunpillar-clr-4: var(--sunpillar-4);
+  --sunpillar-clr-5: var(--sunpillar-5);
+  --sunpillar-clr-6: var(--sunpillar-6);
+
+  /* grain texture (inline SVG noise) */
+  --grain: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCI+CjxmaWx0ZXIgaWQ9Im4iPgo8ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjciIG51bU9jdGF2ZXM9IjEwIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIj48L2ZlVHVyYnVsZW5jZT4KPC9maWx0ZXI+CjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjMDAwIj48L3JlY3Q+CjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIiBmaWx0ZXI9InVybCgjbikiIG9wYWNpdHk9IjAuMyI+PC9yZWN0Pgo8L3N2Zz4=");
+}
+
+/* ── Card container: provides perspective so the spring transform works ── */
+.card-container {
+  perspective: 600px;
+  touch-action: none;
+  display: inline-block;
+}
+
+/* ── Base card shell ── */
+.drawn-card,
+.inv-card,
+.cat-card.owned,
+.detail-card {
+  position: relative;
+  will-change: transform;
+  transform-style: preserve-3d;
+  /* transform is driven entirely by card-tilt.ts spring loop */
+  overflow: hidden;
+  border-radius: 10px;
+  cursor: pointer;
+  outline: 1px solid transparent; /* anti-alias trick */
+  transition: box-shadow 0.4s ease;
+}
+
+/* ── Glare layer (hover-tilt lch() recipe) ── */
+.card__glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 4;
+  transform: translateZ(1.41px);
+  overflow: hidden;
+  /* lch radial glare from hover-tilt, hue 270 = lavender */
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    lch(95% 2.7 270 / calc(var(--card-opacity) * 0.66)) 8%,
+    lch(88% 5.5 270 / calc(var(--card-opacity) * 0.5))  28%,
+    lch(05% 3.5 270 / calc(var(--card-opacity) * 0.25)) 90%
+  );
+  mix-blend-mode: overlay;
+  will-change: background-image;
+}
+
+/* ── Shine layer ── */
+.card__shine {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+  display: grid;
+  transform: translateZ(1px);
+  overflow: hidden;
+  background: transparent;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.85) contrast(2.75) saturate(0.65);
+  mix-blend-mode: color-dodge;
+  opacity: var(--card-opacity);
+  will-change: transform, opacity, background-image, background-size, background-position, background-blend-mode, filter;
+}
+
+.card__shine::before,
+.card__shine::after {
+  --sunpillar-clr-1: var(--sunpillar-5);
+  --sunpillar-clr-2: var(--sunpillar-6);
+  --sunpillar-clr-3: var(--sunpillar-1);
+  --sunpillar-clr-4: var(--sunpillar-2);
+  --sunpillar-clr-5: var(--sunpillar-3);
+  --sunpillar-clr-6: var(--sunpillar-4);
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform: translateZ(1px);
+}
+
+.card__shine::after {
+  --sunpillar-clr-1: var(--sunpillar-6);
+  --sunpillar-clr-2: var(--sunpillar-1);
+  --sunpillar-clr-3: var(--sunpillar-2);
+  --sunpillar-clr-4: var(--sunpillar-3);
+  --sunpillar-clr-5: var(--sunpillar-4);
+  --sunpillar-clr-6: var(--sunpillar-5);
+  transform: translateZ(1.2px);
+}
+
+/* ── Glare layer ── */
+.card__glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 4;
+  transform: translateZ(1.41px);
+  overflow: hidden;
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(0, 0%, 100%, 0.8) 10%,
+    hsla(0, 0%, 100%, 0.65) 20%,
+    hsla(0, 0%, 0%, 0.5) 90%
+  );
+  opacity: var(--card-opacity);
+  mix-blend-mode: overlay;
+  will-change: transform, opacity, background-image, background-size, background-position, background-blend-mode, filter;
+}
+
+/* ============================================================
+   COMMON — no foil, just a subtle hover lift
+   ============================================================ */
+.drawn-card.common,
+.inv-card.common,
+.cat-card.owned.common,
+.detail-card.common {
+  border-color: #3a2a6a;
+}
+
+/* ============================================================
+   RARE — regular holo (ported from regular-holo.css)
+   ============================================================ */
+.drawn-card.rare,
+.inv-card.rare,
+.cat-card.owned.rare,
+.detail-card.rare {
+  border-color: #4080ff;
+  box-shadow: 0 0 12px rgba(64, 128, 255, 0.4);
+}
+.drawn-card.rare:hover,
+.inv-card.rare:hover,
+.cat-card.owned.rare:hover,
+.detail-card.rare:hover {
+  box-shadow: 0 0 3px -1px white, 0 0 3px 1px #4080ff, 0 0 12px 2px rgba(64,128,255,0.6), 0 10px 20px -5px black;
+}
+
+.drawn-card.rare .card__shine,
+.inv-card.rare .card__shine,
+.cat-card.owned.rare .card__shine,
+.detail-card.rare .card__shine {
+  --scanlines-space: 1px;
+  --scanlines-light: #666;
+  --scanlines-dark: black;
+  --bars: 3%;
+  --bar-color: hsla(0, 0%, 70%, 1);
+  --bar-bg: hsla(0, 0%, 0%, 1);
+
+  background-image:
+    repeating-linear-gradient(110deg,
+      #c929f1, #0dbde9, #21e985, #eedf10, #f80e35,
+      #c929f1, #0dbde9, #21e985, #eedf10, #f80e35,
+      #c929f1, #0dbde9, #21e985, #eedf10, #f80e35
+    ),
+    repeating-linear-gradient(90deg,
+      var(--scanlines-dark) calc(var(--scanlines-space) * 0),
+      var(--scanlines-dark) calc(var(--scanlines-space) * 2),
+      var(--scanlines-light) calc(var(--scanlines-space) * 2),
+      var(--scanlines-light) calc(var(--scanlines-space) * 4)
+    );
+  background-position:
+    calc(((50% - var(--background-x)) * 2.6) + 50%) calc(((50% - var(--background-y)) * 3.5) + 50%),
+    center center;
+  background-size: 400% 400%, cover;
+  background-blend-mode: overlay;
+  filter: brightness(1.1) contrast(1.1) saturate(1.2);
+  mix-blend-mode: color-dodge;
+}
+
+.drawn-card.rare .card__shine::before,
+.inv-card.rare .card__shine::before,
+.cat-card.owned.rare .card__shine::before,
+.detail-card.rare .card__shine::before {
+  background-image:
+    repeating-linear-gradient(90deg,
+      var(--bar-bg)    calc(var(--bars)*2),
+      var(--bar-color) calc(var(--bars)*3),
+      var(--bar-bg)    calc(var(--bars)*3.5),
+      var(--bar-color) calc(var(--bars)*4),
+      var(--bar-bg)    calc(var(--bars)*5),
+      var(--bar-bg)    calc(var(--bars)*14)
+    ),
+    repeating-linear-gradient(90deg,
+      var(--bar-bg)    calc(var(--bars)*2),
+      var(--bar-color) calc(var(--bars)*3),
+      var(--bar-bg)    calc(var(--bars)*3.5),
+      var(--bar-color) calc(var(--bars)*4),
+      var(--bar-bg)    calc(var(--bars)*5),
+      var(--bar-bg)    calc(var(--bars)*10)
+    );
+  background-position:
+    calc((((50% - var(--background-x)) * 1.65) + 50%) + (var(--background-y) * 0.5)) var(--background-x),
+    calc((((50% - var(--background-x)) * -0.9) + 50%) - (var(--background-y) * 0.75)) var(--background-y);
+  background-size: 200% 200%, 200% 200%;
+  background-blend-mode: screen;
+  filter: brightness(1.15) contrast(1.1);
+  mix-blend-mode: hard-light;
+}
+
+.drawn-card.rare .card__shine::after,
+.inv-card.rare .card__shine::after,
+.cat-card.owned.rare .card__shine::after,
+.detail-card.rare .card__shine::after {
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(0, 0%, 90%, 0.8) 0%,
+    hsla(0, 0%, 78%, 0.1) 25%,
+    hsl(0, 0%, 0%) 90%
+  );
+  background-position: center center;
+  background-size: cover;
+  mix-blend-mode: luminosity;
+  filter: brightness(0.6) contrast(4);
+}
+
+.drawn-card.rare .card__glare,
+.inv-card.rare .card__glare,
+.cat-card.owned.rare .card__glare,
+.detail-card.rare .card__glare {
+  opacity: calc(var(--card-opacity) * 0.8);
+  filter: brightness(0.8) contrast(1.5);
+  mix-blend-mode: overlay;
+}
+
+/* ============================================================
+   EPIC — V-card style holo (ported from v-regular.css)
+   ============================================================ */
+.drawn-card.epic,
+.inv-card.epic,
+.cat-card.owned.epic,
+.detail-card.epic {
+  border-color: #a040ff;
+  box-shadow: 0 0 16px rgba(160, 64, 255, 0.5);
+}
+.drawn-card.epic:hover,
+.inv-card.epic:hover,
+.cat-card.owned.epic:hover,
+.detail-card.epic:hover {
+  box-shadow: 0 0 3px -1px white, 0 0 3px 1px #a040ff, 0 0 12px 2px rgba(160,64,255,0.7), 0 10px 20px -5px black;
+}
+
+.drawn-card.epic .card__shine,
+.inv-card.epic .card__shine,
+.cat-card.owned.epic .card__shine,
+.detail-card.epic .card__shine,
+.drawn-card.epic .card__shine::after,
+.inv-card.epic .card__shine::after,
+.cat-card.owned.epic .card__shine::after,
+.detail-card.epic .card__shine::after {
+  --space: 5%;
+  --angle: 133deg;
+  --imgsize: 500px;
+
+  background-image:
+    var(--grain),
+    repeating-linear-gradient(0deg,
+      var(--sunpillar-clr-1) calc(var(--space)*1),
+      var(--sunpillar-clr-2) calc(var(--space)*2),
+      var(--sunpillar-clr-3) calc(var(--space)*3),
+      var(--sunpillar-clr-4) calc(var(--space)*4),
+      var(--sunpillar-clr-5) calc(var(--space)*5),
+      var(--sunpillar-clr-6) calc(var(--space)*6),
+      var(--sunpillar-clr-1) calc(var(--space)*7)
+    ),
+    repeating-linear-gradient(var(--angle),
+      #0e152e 0%,
+      hsl(180, 10%, 60%) 3.8%,
+      hsl(180, 29%, 66%) 4.5%,
+      hsl(180, 10%, 60%) 5.2%,
+      #0e152e 10%,
+      #0e152e 12%
+    ),
+    radial-gradient(
+      farthest-corner circle at var(--pointer-x) var(--pointer-y),
+      hsla(0, 0%, 0%, 0.1) 12%,
+      hsla(0, 0%, 0%, 0.15) 20%,
+      hsla(0, 0%, 0%, 0.25) 120%
+    );
+
+  background-blend-mode: screen, hue, hard-light;
+  background-size: var(--imgsize) 100%, 200% 700%, 300% 100%, 200% 100%;
+  background-position:
+    center,
+    0% var(--background-y),
+    var(--background-x) var(--background-y),
+    var(--background-x) var(--background-y);
+
+  filter: brightness(0.8) contrast(2.95) saturate(0.65);
+}
+
+.drawn-card.epic .card__shine::after,
+.inv-card.epic .card__shine::after {  background-position:
+    center,
+    0% var(--background-y),
+    calc(var(--background-x) * -1) calc(var(--background-y) * -1),
+    var(--background-x) var(--background-y);
+  background-size: var(--imgsize) 100%, 200% 400%, 195% 100%, 200% 100%;
+  filter: brightness(1) contrast(2.5) saturate(1.75);
+  mix-blend-mode: soft-light;
+}
+
+.drawn-card.epic .card__glare,
+.inv-card.epic .card__glare,
+.cat-card.owned.epic .card__glare,
+.detail-card.epic .card__glare {
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsl(0, 0%, 100%) 0%,
+    hsla(210, 3%, 54%, 0.33) 45%,
+    hsla(0, 0%, 20%, 0.9) 130%
+  );
+  opacity: calc(var(--card-opacity) * 0.5);
+  mix-blend-mode: hard-light;
+  filter: brightness(0.9) contrast(1.75);
+}
+
+/* Epic idle shimmer */
+@keyframes epicShimmer {
+  0%   { filter: hue-rotate(0deg); }
+  50%  { filter: hue-rotate(20deg); }
+  100% { filter: hue-rotate(0deg); }
+}
+.drawn-card.epic,
+.inv-card.epic,
+.cat-card.owned.epic,
+.detail-card.epic {
+  animation: epicShimmer 5s ease-in-out infinite;
+}
+.drawn-card.epic:hover,
+.inv-card.epic:hover,
+.cat-card.owned.epic:hover,
+.detail-card.epic:hover {
+  animation: none;
+}
+
+/* ============================================================
+   LEGENDARY — cosmos holo (ported from cosmos-holo.css)
+   ============================================================ */
+.drawn-card.legendary,
+.inv-card.legendary,
+.cat-card.owned.legendary,
+.detail-card.legendary {
+  border-color: #ffd700;
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.7), inset 0 0 30px rgba(255, 215, 0, 0.08);
+}
+.drawn-card.legendary:hover,
+.inv-card.legendary:hover,
+.cat-card.owned.legendary:hover,
+.detail-card.legendary:hover {
+  box-shadow: 0 0 3px -1px white, 0 0 3px 1px #ffd700, 0 0 20px 4px rgba(255,215,0,0.8), 0 10px 20px -5px black;
+  animation: none;
+}
+
+.drawn-card.legendary .card__shine,
+.inv-card.legendary .card__shine,
+.cat-card.owned.legendary .card__shine,
+.detail-card.legendary .card__shine {
+  --space: 4%;
+
+  background-image:
+    repeating-linear-gradient(82deg,
+      hsl(53,  65%, 60%) calc(var(--space)*1),
+      hsl(93,  56%, 50%) calc(var(--space)*2),
+      hsl(176, 54%, 49%) calc(var(--space)*3),
+      hsl(228, 59%, 55%) calc(var(--space)*4),
+      hsl(283, 60%, 55%) calc(var(--space)*5),
+      hsl(326, 59%, 51%) calc(var(--space)*6),
+      hsl(326, 59%, 51%) calc(var(--space)*7),
+      hsl(283, 60%, 55%) calc(var(--space)*8),
+      hsl(228, 59%, 55%) calc(var(--space)*9),
+      hsl(176, 54%, 49%) calc(var(--space)*10),
+      hsl(93,  56%, 50%) calc(var(--space)*11),
+      hsl(53,  65%, 60%) calc(var(--space)*12)
+    ),
+    radial-gradient(
+      farthest-corner circle at var(--pointer-x) var(--pointer-y),
+      hsla(180, 100%, 89%, 0.5) 5%,
+      hsla(180, 14%, 57%, 0.3) 40%,
+      hsl(0, 0%, 0%) 130%
+    );
+
+  background-blend-mode: color-burn, multiply;
+  background-position:
+    calc(10% + (var(--pointer-from-left) * 80%)) calc(10% + (var(--pointer-from-top) * 80%)),
+    center center;
+  background-size: 400% 900%, cover;
+
+  filter: brightness(1) contrast(1) saturate(0.8);
+  mix-blend-mode: color-dodge;
+}
+
+.drawn-card.legendary .card__shine::before,
+.inv-card.legendary .card__shine::before,
+.cat-card.owned.legendary .card__shine::before,
+.detail-card.legendary .card__shine::before {
+  background-image:
+    repeating-linear-gradient(82deg,
+      hsl(53,  65%, 60%) calc(var(--space)*1),
+      hsl(93,  56%, 50%) calc(var(--space)*2),
+      hsl(176, 54%, 49%) calc(var(--space)*3),
+      hsl(228, 59%, 55%) calc(var(--space)*4),
+      hsl(283, 60%, 55%) calc(var(--space)*5),
+      hsl(326, 59%, 51%) calc(var(--space)*6),
+      hsl(326, 59%, 51%) calc(var(--space)*7),
+      hsl(283, 60%, 55%) calc(var(--space)*8),
+      hsl(228, 59%, 55%) calc(var(--space)*9),
+      hsl(176, 54%, 49%) calc(var(--space)*10),
+      hsl(93,  56%, 50%) calc(var(--space)*11),
+      hsl(53,  65%, 60%) calc(var(--space)*12)
+    );
+  background-blend-mode: lighten, multiply;
+  background-position:
+    calc(15% + (var(--pointer-from-left) * 70%)) calc(15% + (var(--pointer-from-top) * 70%)),
+    center center;
+  background-size: 400% 900%, cover;
+  filter: brightness(1.25) contrast(1.75) saturate(0.8);
+  mix-blend-mode: overlay;
+}
+
+.drawn-card.legendary .card__shine::after,
+.inv-card.legendary .card__shine::after,
+.cat-card.owned.legendary .card__shine::after,
+.detail-card.legendary .card__shine::after {
+  background-image:
+    repeating-linear-gradient(82deg,
+      hsl(53,  65%, 60%) calc(var(--space)*1),
+      hsl(93,  56%, 50%) calc(var(--space)*2),
+      hsl(176, 54%, 49%) calc(var(--space)*3),
+      hsl(228, 59%, 55%) calc(var(--space)*4),
+      hsl(283, 60%, 55%) calc(var(--space)*5),
+      hsl(326, 59%, 51%) calc(var(--space)*6),
+      hsl(326, 59%, 51%) calc(var(--space)*7),
+      hsl(283, 60%, 55%) calc(var(--space)*8),
+      hsl(228, 59%, 55%) calc(var(--space)*9),
+      hsl(176, 54%, 49%) calc(var(--space)*10),
+      hsl(93,  56%, 50%) calc(var(--space)*11),
+      hsl(53,  65%, 60%) calc(var(--space)*12)
+    );
+  background-blend-mode: multiply, multiply;
+  background-position:
+    calc(20% + (var(--pointer-from-left) * 60%)) calc(20% + (var(--pointer-from-top) * 60%)),
+    center center;
+  background-size: 400% 900%, cover;
+  filter: brightness(1.25) contrast(1.75) saturate(0.8);
+  mix-blend-mode: multiply;
+}
+
+.drawn-card.legendary .card__glare,
+.inv-card.legendary .card__glare,
+.cat-card.owned.legendary .card__glare,
+.detail-card.legendary .card__glare {
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(204, 100%, 95%, 0.8) 5%,
+    hsla(250, 15%, 20%, 1) 150%
+  );
+  filter: brightness(0.75) contrast(2) saturate(2);
+  mix-blend-mode: overlay;
+  opacity: calc(var(--card-opacity) * (0.25 + var(--pointer-from-center)));
+}
+
+/* Legendary idle pulse */
+@keyframes legendaryPulse {
+  0%, 100% { box-shadow: 0 0 24px rgba(255,215,0,0.7), inset 0 0 30px rgba(255,215,0,0.08); }
+  50%       { box-shadow: 0 0 40px rgba(255,215,0,1.0), inset 0 0 40px rgba(255,215,0,0.18); }
+}
+.drawn-card.legendary,
+.inv-card.legendary,
+.cat-card.owned.legendary,
+.detail-card.legendary {
+  animation: legendaryPulse 2.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   CARD REVEAL ANIMATIONS
+   ============================================================ */
+@keyframes cardReveal {
+  from { transform: perspective(600px) rotateY(90deg) scale(0.8); opacity: 0; }
+  to   { transform: perspective(600px) rotateY(0deg)  scale(1);   opacity: 1; }
+}
+@keyframes legendaryReveal {
+  0%   { transform: perspective(600px) scale(0.5) rotateY(-20deg); opacity: 0; filter: brightness(3); }
+  40%  { transform: perspective(600px) scale(1.2) rotateY(10deg);  opacity: 1; filter: brightness(1.5); }
+  70%  { transform: perspective(600px) scale(0.95) rotateY(-5deg); }
+  100% { transform: perspective(600px) scale(1)   rotateY(0deg);   filter: brightness(1); }
+}
+
+.drawn-card { animation: cardReveal 0.4s ease-out both; }
+.drawn-card.legendary { animation: legendaryReveal 0.8s ease-out both, legendaryPulse 2.5s ease-in-out 0.8s infinite; }
+
+/* ============================================================
+   MYTHIC — full-spectrum cosmos holo (0.1% rarity)
+   ============================================================ */
+.drawn-card.mythic,
+.inv-card.mythic,
+.cat-card.owned.mythic,
+.detail-card.mythic {
+  border-color: #ff80ff;
+  box-shadow: 0 0 28px rgba(255, 128, 255, 0.8), inset 0 0 20px rgba(255, 128, 255, 0.1);
+}
+.drawn-card.mythic:hover,
+.inv-card.mythic:hover,
+.cat-card.owned.mythic:hover,
+.detail-card.mythic:hover {
+  box-shadow: 0 0 4px -1px white, 0 0 4px 1px #ff80ff, 0 0 28px 6px rgba(255,128,255,0.9), 0 10px 20px -5px black;
+  animation: none;
+}
+
+.drawn-card.mythic .card__shine,
+.inv-card.mythic .card__shine,
+.cat-card.owned.mythic .card__shine,
+.detail-card.mythic .card__shine {
+  --space: 3%;
+  background-image:
+    repeating-linear-gradient(75deg,
+      hsl(300, 80%, 65%) calc(var(--space)*1),
+      hsl(260, 80%, 65%) calc(var(--space)*2),
+      hsl(200, 80%, 65%) calc(var(--space)*3),
+      hsl(160, 80%, 65%) calc(var(--space)*4),
+      hsl(100, 80%, 65%) calc(var(--space)*5),
+      hsl(50,  80%, 65%) calc(var(--space)*6),
+      hsl(20,  80%, 65%) calc(var(--space)*7),
+      hsl(300, 80%, 65%) calc(var(--space)*8)
+    ),
+    radial-gradient(
+      farthest-corner circle at var(--pointer-x) var(--pointer-y),
+      hsla(300, 100%, 90%, 0.6) 5%,
+      hsla(260, 60%, 50%, 0.3) 40%,
+      hsl(0, 0%, 0%) 130%
+    );
+  background-blend-mode: color-burn, multiply;
+  background-position:
+    calc(5% + (var(--pointer-from-left) * 90%)) calc(5% + (var(--pointer-from-top) * 90%)),
+    center center;
+  background-size: 300% 700%, cover;
+  filter: brightness(1.1) contrast(1.1) saturate(1.2);
+  mix-blend-mode: color-dodge;
+}
+
+.drawn-card.mythic .card__glare,
+.inv-card.mythic .card__glare,
+.cat-card.owned.mythic .card__glare,
+.detail-card.mythic .card__glare {
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(300, 100%, 95%, 0.9) 5%,
+    hsla(260, 80%, 60%, 0.4) 40%,
+    hsla(0, 0%, 10%, 1) 150%
+  );
+  filter: brightness(0.8) contrast(2) saturate(2.5);
+  mix-blend-mode: overlay;
+  opacity: calc(var(--card-opacity) * (0.4 + var(--pointer-from-center) * 0.6));
+}
+
+/* Mythic idle pulse — more dramatic than legendary */
+@keyframes mythicPulse {
+  0%, 100% { box-shadow: 0 0 28px rgba(255,128,255,0.8), inset 0 0 20px rgba(255,128,255,0.1); filter: hue-rotate(0deg); }
+  33%       { box-shadow: 0 0 48px rgba(255,128,255,1.0), inset 0 0 32px rgba(255,128,255,0.2); filter: hue-rotate(30deg); }
+  66%       { box-shadow: 0 0 36px rgba(200,100,255,0.9), inset 0 0 24px rgba(200,100,255,0.15); filter: hue-rotate(-20deg); }
+}
+.drawn-card.mythic,
+.inv-card.mythic,
+.cat-card.owned.mythic,
+.detail-card.mythic {
+  animation: mythicPulse 3s ease-in-out infinite;
+}
