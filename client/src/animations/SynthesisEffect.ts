@@ -127,6 +127,7 @@ export class SynthesisEffect {
   private scene: THREE.Scene | null = null;
   private camera: THREE.PerspectiveCamera | null = null;
   private rafId: number | null = null;
+  private _finish: (() => void) | null = null;
 
   play(
     materials: CardInfo[],
@@ -136,6 +137,11 @@ export class SynthesisEffect {
   ): void {
     this._setup();
     this._run(materials, result, success, onDone);
+  }
+
+  /** Immediately end the animation and call onDone. */
+  skipToEnd(): void {
+    this._finish?.();
   }
 
   private _setup(): void {
@@ -192,7 +198,7 @@ export class SynthesisEffect {
 
   private _run(materials: CardInfo[], result: CardInfo | null, success: boolean, onDone: () => void): void {
     const scene = this.scene!;
-    const tl = gsap.timeline();
+    const tl = gsap.timeline({ timeScale: 50 });
 
     // ── Phase 1: Material cards orbit in ─────────────────────────────────────
     const count = materials.length;
@@ -326,9 +332,11 @@ export class SynthesisEffect {
       this._teardown();
       onDone();
     };
+    this._finish = finish;
     this.container!.addEventListener('click', finish, { once: true });
     tl.call(() => {
       this.container?.removeEventListener('click', finish);
+      this._finish = null;
       this._teardown();
       onDone();
     });

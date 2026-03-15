@@ -58,9 +58,24 @@
   /* transform is driven entirely by card-tilt.ts spring loop */
   overflow: hidden;
   border-radius: 10px;
+  border: 2px solid transparent;
   cursor: pointer;
   outline: 1px solid transparent; /* anti-alias trick */
   transition: box-shadow 0.4s ease;
+}
+
+/* Top-edge bevel highlight for 3D depth */
+.drawn-card::before,
+.inv-card::before,
+.cat-card.owned::before,
+.detail-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255,255,255,0.18) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 5;
 }
 
 /* ── Glare layer (hover-tilt lch() recipe) ── */
@@ -155,6 +170,7 @@
 .cat-card.owned.common,
 .detail-card.common {
   border-color: #3a2a6a;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 /* ============================================================
@@ -165,7 +181,7 @@
 .cat-card.owned.rare,
 .detail-card.rare {
   border-color: #4080ff;
-  box-shadow: 0 0 12px rgba(64, 128, 255, 0.4);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.5), 0 0 12px rgba(64,128,255,0.4), inset 0 1px 0 rgba(100,160,255,0.3), inset 0 -1px 0 rgba(0,0,50,0.5);
 }
 .drawn-card.rare:hover,
 .inv-card.rare:hover,
@@ -269,7 +285,7 @@
 .cat-card.owned.epic,
 .detail-card.epic {
   border-color: #a040ff;
-  box-shadow: 0 0 16px rgba(160, 64, 255, 0.5);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.7), 0 6px 20px rgba(0,0,0,0.5), 0 0 16px rgba(160,64,255,0.5), inset 0 1px 0 rgba(200,120,255,0.35), inset 0 -1px 0 rgba(30,0,60,0.6);
 }
 .drawn-card.epic:hover,
 .inv-card.epic:hover,
@@ -380,7 +396,7 @@
 .cat-card.owned.legendary,
 .detail-card.legendary {
   border-color: #ffd700;
-  box-shadow: 0 0 24px rgba(255, 215, 0, 0.7), inset 0 0 30px rgba(255, 215, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), 0 0 24px rgba(255,215,0,0.7), inset 0 1px 0 rgba(255,240,100,0.4), inset 0 -1px 0 rgba(80,50,0,0.6), inset 0 0 30px rgba(255,215,0,0.08);
 }
 .drawn-card.legendary:hover,
 .inv-card.legendary:hover,
@@ -500,8 +516,8 @@
 
 /* Legendary idle pulse */
 @keyframes legendaryPulse {
-  0%, 100% { box-shadow: 0 0 24px rgba(255,215,0,0.7), inset 0 0 30px rgba(255,215,0,0.08); }
-  50%       { box-shadow: 0 0 40px rgba(255,215,0,1.0), inset 0 0 40px rgba(255,215,0,0.18); }
+  0%, 100% { box-shadow: 0 2px 4px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), 0 0 24px rgba(255,215,0,0.7), inset 0 1px 0 rgba(255,240,100,0.4), inset 0 -1px 0 rgba(80,50,0,0.6), inset 0 0 30px rgba(255,215,0,0.08); }
+  50%       { box-shadow: 0 2px 4px rgba(0,0,0,0.7), 0 8px 28px rgba(0,0,0,0.5), 0 0 40px rgba(255,215,0,1.0), inset 0 1px 0 rgba(255,240,100,0.5), inset 0 -1px 0 rgba(80,50,0,0.6), inset 0 0 40px rgba(255,215,0,0.18); }
 }
 .drawn-card.legendary,
 .inv-card.legendary,
@@ -535,7 +551,7 @@
 .cat-card.owned.mythic,
 .detail-card.mythic {
   border-color: #ff80ff;
-  box-shadow: 0 0 28px rgba(255, 128, 255, 0.8), inset 0 0 20px rgba(255, 128, 255, 0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 8px 28px rgba(0,0,0,0.6), 0 0 28px rgba(255,128,255,0.8), inset 0 1px 0 rgba(255,180,255,0.45), inset 0 -1px 0 rgba(80,0,80,0.6), inset 0 0 20px rgba(255,128,255,0.1);
 }
 .drawn-card.mythic:hover,
 .inv-card.mythic:hover,
@@ -593,9 +609,9 @@
 
 /* Mythic idle pulse — more dramatic than legendary */
 @keyframes mythicPulse {
-  0%, 100% { box-shadow: 0 0 28px rgba(255,128,255,0.8), inset 0 0 20px rgba(255,128,255,0.1); filter: hue-rotate(0deg); }
-  33%       { box-shadow: 0 0 48px rgba(255,128,255,1.0), inset 0 0 32px rgba(255,128,255,0.2); filter: hue-rotate(30deg); }
-  66%       { box-shadow: 0 0 36px rgba(200,100,255,0.9), inset 0 0 24px rgba(200,100,255,0.15); filter: hue-rotate(-20deg); }
+  0%, 100% { box-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 8px 28px rgba(0,0,0,0.6), 0 0 28px rgba(255,128,255,0.8), inset 0 1px 0 rgba(255,180,255,0.45), inset 0 -1px 0 rgba(80,0,80,0.6), inset 0 0 20px rgba(255,128,255,0.1); filter: hue-rotate(0deg); }
+  33%       { box-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 8px 32px rgba(0,0,0,0.6), 0 0 48px rgba(255,128,255,1.0), inset 0 1px 0 rgba(255,180,255,0.55), inset 0 -1px 0 rgba(80,0,80,0.6), inset 0 0 32px rgba(255,128,255,0.2); filter: hue-rotate(30deg); }
+  66%       { box-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 8px 28px rgba(0,0,0,0.6), 0 0 36px rgba(200,100,255,0.9), inset 0 1px 0 rgba(220,150,255,0.45), inset 0 -1px 0 rgba(60,0,80,0.6), inset 0 0 24px rgba(200,100,255,0.15); filter: hue-rotate(-20deg); }
 }
 .drawn-card.mythic,
 .inv-card.mythic,

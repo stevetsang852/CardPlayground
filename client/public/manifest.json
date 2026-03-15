@@ -1,0 +1,11 @@
+{
+  "name": "Card Mystery Realm",
+  "short_name": "CardRealm",
+  "description": "Offline card collection game",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait-primary",
+  "icons": []
+}

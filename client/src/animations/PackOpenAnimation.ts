@@ -28,47 +28,252 @@ const RARITY_PARTICLE_COUNT: Record<string, number> = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Tracks all live holo cards so the render loop can update them
+const _holoCards: HoloCardMesh[] = [];
+
+class HoloCardMesh {
+  mesh: THREE.Mesh;
+  private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D;
+  private tex: THREE.CanvasTexture;
+  private icon: string;
+  private rarity: string;
+
+  constructor(icon: string, rarity: string, size = 1) {
+    this.icon = icon;
+    this.rarity = rarity;
+
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = 256;
+    this.canvas.height = 360;
+    this.ctx = this.canvas.getContext('2d')!;
+
+    this.tex = new THREE.CanvasTexture(this.canvas);
+    const mat = new THREE.MeshStandardMaterial({
+      map: this.tex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      emissive: new THREE.Color(RARITY_COLOR[rarity] ?? 0x888888),
+      emissiveIntensity: rarity === 'mythic' ? 0.3 : rarity === 'legendary' ? 0.25 : 0.15,
+    });
+
+    const geo = new THREE.PlaneGeometry(size * 0.7, size);
+    this.mesh = new THREE.Mesh(geo, mat);
+
+    this.draw(0);
+    _holoCards.push(this);
+  }
+
+  draw(t: number): void {
+    const ctx = this.ctx;
+    const W = 256, H = 360;
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Base card background ──────────────────────────────────────────────
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#1e1040');
+    bg.addColorStop(1, '#0e1830');
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.fill();
+
+    // ── Rarity-specific holo layer ────────────────────────────────────────
+    if (this.rarity === 'rare') {
+      this._drawRareHolo(ctx, t, W, H);
+    } else if (this.rarity === 'epic') {
+      this._drawEpicHolo(ctx, t, W, H);
+    } else if (this.rarity === 'legendary') {
+      this._drawLegendaryHolo(ctx, t, W, H);
+    } else if (this.rarity === 'mythic') {
+      this._drawMythicHolo(ctx, t, W, H);
+    }
+
+    // ── Border ────────────────────────────────────────────────────────────
+    const borderColor = '#' + ((RARITY_COLOR[this.rarity] ?? 0x888888) >>> 0).toString(16).padStart(6, '0');
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = this.rarity === 'mythic' ? 8 : this.rarity === 'legendary' ? 7 : 5;
+    ctx.shadowColor = borderColor;
+    ctx.shadowBlur = this.rarity === 'common' ? 0 : 18;
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // ── Icon ──────────────────────────────────────────────────────────────
+    ctx.font = '110px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.icon, W / 2, H / 2 - 10);
+
+    // ── Rarity label ──────────────────────────────────────────────────────
+    const labelColor = borderColor;
+    ctx.font = 'bold 18px "Segoe UI", sans-serif';
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(this.rarity.toUpperCase(), W / 2, H - 20);
+
+    this.tex.needsUpdate = true;
+  }
+
+  private _drawRareHolo(ctx: CanvasRenderingContext2D, t: number, W: number, H: number): void {
+    // Animated rainbow scanlines — offset scrolls over time
+    const offset = (t * 60) % (H * 2);
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.clip();
+
+    // Rainbow gradient that scrolls vertically
+    const grad = ctx.createLinearGradient(0, -offset, 0, H * 2 - offset);
+    const colors = ['#c929f1','#0dbde9','#21e985','#eedf10','#f80e35'];
+    colors.forEach((c, i) => { grad.addColorStop(i / (colors.length - 1), c); });
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = 0.22;
+    ctx.fillRect(0, 0, W, H);
+
+    // Scanlines
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = '#000';
+    for (let y = 0; y < H; y += 4) {
+      ctx.fillRect(0, y, W, 2);
+    }
+    ctx.restore();
+  }
+
+  private _drawEpicHolo(ctx: CanvasRenderingContext2D, t: number, W: number, H: number): void {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.clip();
+
+    // Sunpillar vertical bands that shift horizontally
+    const offset = (t * 40) % W;
+    const sunColors = [
+      'hsl(2,100%,73%)', 'hsl(53,100%,69%)', 'hsl(93,100%,69%)',
+      'hsl(176,100%,76%)', 'hsl(228,100%,74%)', 'hsl(283,100%,73%)',
+    ];
+    const bandW = W / sunColors.length;
+    sunColors.forEach((c, i) => {
+      const x = ((i * bandW - offset + W * 2) % (W + bandW)) - bandW;
+      const g = ctx.createLinearGradient(x, 0, x + bandW, 0);
+      g.addColorStop(0, 'transparent');
+      g.addColorStop(0.5, c);
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g;
+      ctx.globalAlpha = 0.28;
+      ctx.fillRect(0, 0, W, H);
+    });
+
+    // Diagonal shimmer sweep
+    const sweep = ((t * 0.8) % 2) - 0.5;
+    const sg = ctx.createLinearGradient(sweep * W, 0, (sweep + 0.5) * W, H);
+    sg.addColorStop(0, 'transparent');
+    sg.addColorStop(0.5, 'rgba(200,150,255,0.35)');
+    sg.addColorStop(1, 'transparent');
+    ctx.fillStyle = sg;
+    ctx.globalAlpha = 1;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.restore();
+  }
+
+  private _drawLegendaryHolo(ctx: CanvasRenderingContext2D, t: number, W: number, H: number): void {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.clip();
+
+    // Cosmos rainbow bands at 82deg angle, scrolling
+    const offset = (t * 35) % (H * 3);
+    const space = H * 0.04;
+    const cosmosColors = [
+      `hsl(53,65%,60%)`, `hsl(93,56%,50%)`, `hsl(176,54%,49%)`,
+      `hsl(228,59%,55%)`, `hsl(283,60%,55%)`, `hsl(326,59%,51%)`,
+    ];
+    // Tilted gradient via transform
+    ctx.translate(W / 2, H / 2);
+    ctx.rotate(-8 * Math.PI / 180);
+    ctx.translate(-W / 2, -H / 2);
+
+    const grad = ctx.createLinearGradient(0, -offset, 0, H * 3 - offset);
+    cosmosColors.forEach((c, i) => {
+      const pos = (i * space * 2) / (H * 3);
+      grad.addColorStop(Math.min(pos, 1), c);
+    });
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = 0.35;
+    ctx.fillRect(-W, -H, W * 3, H * 3);
+    ctx.restore();
+
+    // Gold shimmer sweep
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.clip();
+    const sweep = ((t * 0.6) % 2.5) - 0.5;
+    const sg = ctx.createLinearGradient(sweep * W, 0, (sweep + 0.6) * W, H);
+    sg.addColorStop(0, 'transparent');
+    sg.addColorStop(0.5, 'rgba(255,220,80,0.45)');
+    sg.addColorStop(1, 'transparent');
+    ctx.fillStyle = sg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+
+  private _drawMythicHolo(ctx: CanvasRenderingContext2D, t: number, W: number, H: number): void {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.clip();
+
+    // Full-spectrum hue-rotating rainbow
+    const hueShift = (t * 60) % 360;
+    const offset = (t * 50) % (H * 2);
+    const mythicColors = [300, 260, 200, 160, 100, 50, 20].map(
+      h => `hsl(${(h + hueShift) % 360},80%,65%)`
+    );
+    const grad = ctx.createLinearGradient(0, -offset, W, H * 2 - offset);
+    mythicColors.forEach((c, i) => { grad.addColorStop(i / (mythicColors.length - 1), c); });
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = 0.38;
+    ctx.fillRect(0, 0, W, H);
+
+    // Fast double sweep
+    for (let s = 0; s < 2; s++) {
+      const sweep = ((t * (0.9 + s * 0.4) + s * 1.2) % 3) - 0.5;
+      const sg = ctx.createLinearGradient(sweep * W, 0, (sweep + 0.4) * W, H);
+      sg.addColorStop(0, 'transparent');
+      sg.addColorStop(0.5, `hsla(${(hueShift + s * 120) % 360},100%,85%,0.5)`);
+      sg.addColorStop(1, 'transparent');
+      ctx.fillStyle = sg;
+      ctx.globalAlpha = 1;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // Grain noise overlay
+    ctx.globalAlpha = 0.04;
+    for (let i = 0; i < 800; i++) {
+      const x = Math.random() * W;
+      const y = Math.random() * H;
+      ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#000';
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    ctx.restore();
+  }
+
+  dispose(): void {
+    const idx = _holoCards.indexOf(this);
+    if (idx !== -1) _holoCards.splice(idx, 1);
+    (this.mesh.material as THREE.MeshStandardMaterial).dispose();
+    this.tex.dispose();
+  }
+}
+
 function makeCardMesh(icon: string, rarity: string, size = 1): THREE.Mesh {
-  const w = size * 0.7;
-  const h = size;
-  const geo = new THREE.PlaneGeometry(w, h, 1, 1);
-
-  // Canvas texture for the card face
-  const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 360;
-  const ctx = canvas.getContext('2d')!;
-
-  // Background gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, 360);
-  grad.addColorStop(0, '#1e1040');
-  grad.addColorStop(1, '#0e1830');
-  ctx.fillStyle = grad;
-  ctx.roundRect(4, 4, 248, 352, 16);
-  ctx.fill();
-
-  // Rarity border glow
-  const borderColor = ['#', (RARITY_COLOR[rarity] >>> 0).toString(16).padStart(6, '0')].join('');
-  ctx.strokeStyle = borderColor;
-  ctx.lineWidth = 6;
-  ctx.roundRect(4, 4, 248, 352, 16);
-  ctx.stroke();
-
-  // Icon
-  ctx.font = '120px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(icon, 128, 160);
-
-  const tex = new THREE.CanvasTexture(canvas);
-  const mat = new THREE.MeshStandardMaterial({
-    map: tex,
-    transparent: true,
-    side: THREE.DoubleSide,
-    emissive: new THREE.Color(RARITY_COLOR[rarity]),
-    emissiveIntensity: 0.15,
-  });
-
-  return new THREE.Mesh(geo, mat);
+  return new HoloCardMesh(icon, rarity, size).mesh;
 }
 
 function makePackMesh(icon: string): THREE.Mesh {
@@ -236,8 +441,12 @@ export class PackOpenAnimation {
     scene.add(new THREE.Points(starGeo, starMat));
 
     // Render loop
+    const clock = new THREE.Clock();
     const loop = () => {
       this.rafId = requestAnimationFrame(loop);
+      const t = clock.getElapsedTime();
+      // Update all live holo card textures
+      _holoCards.forEach(h => h.draw(t));
       renderer.render(scene, camera);
     };
     loop();
@@ -248,6 +457,8 @@ export class PackOpenAnimation {
     this.renderer?.dispose();
     this.container?.remove();
     this.scene?.clear();
+    // Dispose all holo card textures
+    _holoCards.splice(0).forEach(h => h.dispose());
     this.container = null;
     this.renderer = null;
     this.scene = null;
@@ -263,7 +474,7 @@ export class PackOpenAnimation {
     packMesh.scale.set(0, 0, 0);
     scene.add(packMesh);
 
-    const tl = gsap.timeline();
+    const tl = gsap.timeline({ timeScale: 50 });
 
     // Pack pops in
     tl.to(packMesh.scale, { x: 1.8, y: 1.8, z: 1.8, duration: 0.5, ease: 'back.out(2)' });
