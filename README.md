@@ -1,118 +1,69 @@
 # CardPlayground
 
-Formerly *Card Mystery Realm (卡片秘境)*. A card collection playground with gacha mechanics, synthesis, random events, and social features.
-
-GitHub repo name is still `test1` until renamed in GitHub Settings → General → Repository name → `CardPlayground`.
+Card collection playground with gacha, synthesis, random events, and social features.
 
 ## Project Structure
 
 ```
 CardPlayground/
-├── backend/          # Backend server (Express + WebSocket)
-├── client/           # Client application (Vite + Three.js)
-├── shared/           # Shared type definitions
+├── backend/          # Express + WebSocket
+├── client/           # Vite + Three.js
+├── shared/           # Shared types
 └── .kiro/            # Spec files
 ```
 
 ## Technology Stack
 
 ### Backend
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js
-- **WebSocket**: ws library
-- **Database**: Firebase Firestore
-- **Cache**: Redis
-- **Testing**: Jest + fast-check
+- Node.js + TypeScript + Express
+- WebSocket (`ws`)
+- **Database (default): local JSON file** — `backend/data/local-db.json`
+- Optional: Firebase Firestore (`DATABASE_DRIVER=firestore`)
+- Optional cache: Redis (skipped if Redis is down)
+- Jest + fast-check
 
 ### Client
-- **Build Tool**: Vite
-- **3D Graphics**: Three.js
-- **Animation**: GSAP
-- **Auth**: Firebase Authentication
-- **Testing**: Jest + fast-check
-
-### Shared
-- **Language**: TypeScript
-- **Purpose**: Shared type definitions and utilities
+- Vite, Three.js, GSAP
+- Firebase Auth still optional for production identity
 
 ## Setup
 
-### Prerequisites
-- Node.js 18+
-- Redis server
-- Firebase project with Firestore enabled
-
-### Installation
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm run install:all
-   ```
-
-3. Configure environment variables:
-   - Copy `backend/.env.example` to `backend/.env`
-   - Copy `client/.env.example` to `client/.env`
-   - Fill in your Firebase and Redis credentials
-
-4. Set up Firebase:
-   - Download your Firebase service account key
-   - Place it in `backend/serviceAccountKey.json`
-
-### Development
+Prerequisites: Node.js 18+. Redis and Firebase are **not** required for local play.
 
 ```bash
+npm run install:all
+cp backend/.env.example backend/.env
 npm run dev:backend
 npm run dev:client
 ```
 
-### Testing
+Default env:
+
+```text
+DATABASE_DRIVER=local
+LOCAL_DB_PATH=./data/local-db.json
+```
+
+Data survives backend restarts in that JSON file. Delete the file to reset.
+
+To use Firestore later:
+
+```text
+DATABASE_DRIVER=firestore
+FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
+FIREBASE_DATABASE_URL=https://your-project.firebaseio.com
+```
+
+## Testing
 
 ```bash
 npm test
-npm test -w backend
-npm test -w client
-npm test -w shared
 ```
 
-### Building
+## API
 
-```bash
-npm run build
-```
-
-## Architecture
-
-### Backend Services
-- **Card Drawing Service**: pack purchases and card generation
-- **Card Synthesis Service**: combination and upgrades
-- **Random Event Service**: special events
-- **Social Service**: galleries, likes, comments, leaderboards
-- **Trading Market Service**: card trading
-- **Achievement Service**: player accomplishments
-- **Season Service**: seasonal content and battle pass
-
-### API Endpoints
-- REST API: `http://localhost:3000/api/v1`
+- REST: `http://localhost:3000/api/v1`
 - WebSocket: `ws://localhost:3000/ws`
-
-### Database Collections
-- `players`, `cards`, `card_templates`, `pack_configurations`
-- `galleries`, `market_listings`, `achievements`, `seasons`
-- `active_events`, `missions`
-
-## Features
-
-- Gacha + pity + luck value
-- Card synthesis
-- Random events
-- Social galleries and leaderboards
-- Trading market
-- Achievements and seasons
-- Server-authoritative game logic
-- WebSocket live updates
-- Redis cache
-- Property-based tests
 
 ## License
 
