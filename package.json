@@ -1,7 +1,7 @@
 {
-  "name": "card-mystery-realm",
+  "name": "card-playground",
   "version": "1.0.0",
-  "description": "Card collection game with gacha mechanics, synthesis systems, and social features",
+  "description": "CardPlayground — card collection game with gacha, synthesis, and social features",
   "private": true,
   "workspaces": [
     "backend",
