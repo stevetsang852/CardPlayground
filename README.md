@@ -1,15 +1,17 @@
-# Card Mystery Realm (卡片秘境)
+# CardPlayground
 
-A card collection game with gacha mechanics, synthesis systems, random events, and social features.
+Formerly *Card Mystery Realm (卡片秘境)*. A card collection playground with gacha mechanics, synthesis, random events, and social features.
+
+GitHub repo name is still `test1` until renamed in GitHub Settings → General → Repository name → `CardPlayground`.
 
 ## Project Structure
 
 ```
-card-mystery-realm/
+CardPlayground/
 ├── backend/          # Backend server (Express + WebSocket)
 ├── client/           # Client application (Vite + Three.js)
 ├── shared/           # Shared type definitions
-└── .kiro/            # Kiro spec files
+└── .kiro/            # Spec files
 ```
 
 ## Technology Stack
@@ -36,7 +38,7 @@ card-mystery-realm/
 ## Setup
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - Redis server
 - Firebase project with Firestore enabled
 
@@ -59,25 +61,15 @@ card-mystery-realm/
 
 ### Development
 
-Run backend server:
 ```bash
 npm run dev:backend
-```
-
-Run client development server:
-```bash
 npm run dev:client
 ```
 
 ### Testing
 
-Run all tests:
 ```bash
 npm test
-```
-
-Run tests for specific workspace:
-```bash
 npm test -w backend
 npm test -w client
 npm test -w shared
@@ -85,7 +77,6 @@ npm test -w shared
 
 ### Building
 
-Build all packages:
 ```bash
 npm run build
 ```
@@ -93,51 +84,35 @@ npm run build
 ## Architecture
 
 ### Backend Services
-- **Card Drawing Service**: Manages pack purchases and card generation
-- **Card Synthesis Service**: Handles card combination and upgrades
-- **Random Event Service**: Triggers and manages special events
-- **Social Service**: Manages galleries, likes, comments, and leaderboards
-- **Trading Market Service**: Handles card trading and market dynamics
-- **Achievement Service**: Tracks and rewards player accomplishments
-- **Season Service**: Manages seasonal content and battle pass
+- **Card Drawing Service**: pack purchases and card generation
+- **Card Synthesis Service**: combination and upgrades
+- **Random Event Service**: special events
+- **Social Service**: galleries, likes, comments, leaderboards
+- **Trading Market Service**: card trading
+- **Achievement Service**: player accomplishments
+- **Season Service**: seasonal content and battle pass
 
 ### API Endpoints
 - REST API: `http://localhost:3000/api/v1`
 - WebSocket: `ws://localhost:3000/ws`
 
 ### Database Collections
-- `players`: Player profiles and state
-- `cards`: Card instances
-- `card_templates`: Card definitions
-- `pack_configurations`: Pack types and probabilities
-- `galleries`: Player card displays
-- `market_listings`: Active market listings
-- `achievements`: Achievement definitions
-- `seasons`: Season configurations
-- `active_events`: Currently active events
-- `missions`: Daily and weekly missions
+- `players`, `cards`, `card_templates`, `pack_configurations`
+- `galleries`, `market_listings`, `achievements`, `seasons`
+- `active_events`, `missions`
 
 ## Features
 
-### Core Systems
-- **Gacha System**: Multiple pack types with configurable probabilities
-- **Pity System**: Guaranteed drops after unsuccessful attempts
-- **Luck Value**: Hidden mechanic that increases drop rates
-- **Card Synthesis**: Combine cards with varying success rates
-- **Random Events**: Mysterious Merchant, Card Storm, Lucky Moment, Copy Miracle
-- **Social Features**: Galleries, likes, comments, leaderboards
-- **Trading Market**: Player-to-player card trading with dynamic pricing
-- **Achievements**: Collection, rarity, social, and secret achievements
-- **Seasons**: Time-limited content with battle pass progression
-- **Daily Missions**: Engagement mechanics with rewards
-
-### Technical Features
-- **Server Authority**: All game logic validated server-side
-- **Deterministic RNG**: Synchronized random generation
-- **Real-time Updates**: WebSocket-based live updates
-- **Caching**: Redis caching for performance
-- **Error Recovery**: Automatic retry and refund mechanisms
-- **Property-Based Testing**: Comprehensive test coverage
+- Gacha + pity + luck value
+- Card synthesis
+- Random events
+- Social galleries and leaderboards
+- Trading market
+- Achievements and seasons
+- Server-authoritative game logic
+- WebSocket live updates
+- Redis cache
+- Property-based tests
 
 ## License
 
