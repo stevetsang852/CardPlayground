@@ -6,12 +6,13 @@ dotenv.config();
 
 type DocData = Record<string, any>;
 
-function localDbPath(): string {
+export function localDbPath(): string {
   return process.env.LOCAL_DB_PATH
     || path.resolve(process.cwd(), 'data', 'local-db.json');
 }
 
 function persistEnabled(): boolean {
+  if (process.env.LOCAL_DB_PATH) return true;
   return process.env.NODE_ENV !== 'test';
 }
 
@@ -62,15 +63,9 @@ class MockQuery {
       return true;
     }));
   }
-  orderBy(_field: string, _dir?: string): MockQuery {
-    return this;
-  }
-  limit(n: number): MockQuery {
-    return new MockQuery(this.docs.slice(0, n));
-  }
-  offset(n: number): MockQuery {
-    return new MockQuery(this.docs.slice(n));
-  }
+  orderBy(_field: string, _dir?: string): MockQuery { return this; }
+  limit(n: number): MockQuery { return new MockQuery(this.docs.slice(0, n)); }
+  offset(n: number): MockQuery { return new MockQuery(this.docs.slice(n)); }
   async get() {
     return {
       docs: this.docs.map(d => ({ id: d.id, data: () => d.data, exists: true })),
@@ -82,21 +77,10 @@ class MockQuery {
 
 class MockBatch {
   private ops: (() => Promise<void> | void)[] = [];
-  set(ref: MockDocRef, data: DocData) {
-    this.ops.push(() => ref.set(data));
-    return this;
-  }
-  update(ref: MockDocRef, data: DocData) {
-    this.ops.push(() => ref.update(data));
-    return this;
-  }
-  delete(ref: MockDocRef) {
-    this.ops.push(() => ref.delete());
-    return this;
-  }
-  async commit() {
-    for (const op of this.ops) await op();
-  }
+  set(ref: MockDocRef, data: DocData) { this.ops.push(() => ref.set(data)); return this; }
+  update(ref: MockDocRef, data: DocData) { this.ops.push(() => ref.update(data)); return this; }
+  delete(ref: MockDocRef) { this.ops.push(() => ref.delete()); return this; }
+  async commit() { for (const op of this.ops) await op(); }
 }
 
 class MockCollection extends MockQuery {
@@ -152,10 +136,7 @@ class LocalFirestore {
     return new MockCollection(this.getStore(name), this);
   }
 
-  batch(): MockBatch {
-    return new MockBatch();
-  }
-
+  batch(): MockBatch { return new MockBatch(); }
   settings(_opts: any) { /* no-op */ }
 
   private load() {
@@ -187,8 +168,7 @@ let usingLocal = false;
 
 function useLocalDatabase(): boolean {
   const driver = (process.env.DATABASE_DRIVER || 'local').toLowerCase();
-  if (driver === 'firestore') return false;
-  return true;
+  return driver !== 'firestore';
 }
 
 export function initializeDatabase(): any {
@@ -216,6 +196,11 @@ export function initializeDatabase(): any {
   usingLocal = true;
   console.log(`Using local JSON database at ${filePath}`);
   return db;
+}
+
+export function resetDatabaseForTests(): void {
+  db = undefined;
+  usingLocal = false;
 }
 
 export function getDatabase(): any {
