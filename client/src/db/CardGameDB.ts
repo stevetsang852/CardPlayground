@@ -1,23 +1,22 @@
 import Dexie, { type Table } from 'dexie';
 import type { Rarity } from '../cardData';
 
-// ── Interfaces ────────────────────────────────────────────────────────────────
-
 export interface ICardInstance {
   id?: number;
   cardId: number;
   rarity: Rarity;
   level: number;
-  obtainedAt: number; // timestamp
+  obtainedAt: number;
+  foil?: string;
 }
 
 export interface IGallerySlot {
-  slotIndex: number; // 0-based grid position
+  slotIndex: number;
   cardInstanceId: number;
 }
 
 export interface IGallery {
-  userId: string; // always 'local' for offline
+  userId: string;
   slots: IGallerySlot[];
   updatedAt: number;
 }
@@ -39,18 +38,16 @@ export interface IMarketListing {
   cardId: number;
   rarity: Rarity;
   price: number;
-  expiresAt: number; // timestamp
+  expiresAt: number;
   purchased: boolean;
 }
 
 export interface IOperationLog {
   id?: number;
-  type: string; // 'draw' | 'synthesize' | 'purchase' | 'login'
+  type: string;
   timestamp: number;
-  data: string; // JSON string
+  data: string;
 }
-
-// ── Database ──────────────────────────────────────────────────────────────────
 
 export class CardGameDB extends Dexie {
   cards!: Table<ICardInstance, number>;
