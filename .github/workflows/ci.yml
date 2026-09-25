@@ -7,6 +7,16 @@ on:
 jobs:
   local-db:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     defaults:
       run:
         working-directory: backend
@@ -18,8 +28,9 @@ jobs:
       - name: Install workspace deps
         working-directory: .
         run: npm install
-      - name: Test local DB, auth, assets, catalog
+      - name: Test local DB, auth, assets, catalog, redis
         env:
           DATABASE_DRIVER: local
           DEBUG_AUTH_BYPASS: false
-        run: npx jest src/config/localDatabase.test.ts src/config/database.test.ts src/config/authConfig.test.ts src/utils/playgroundToken.test.ts src/services/assetVerificationService.test.ts src/catalog/kadoParser.test.ts src/catalog/officialAsiaParser.test.ts src/catalog/kadoCatalogService.test.ts --coverage=false --runInBand
+          REDIS_URL: redis://127.0.0.1:6379
+        run: npx jest src/config/localDatabase.test.ts src/config/database.test.ts src/config/authConfig.test.ts src/utils/playgroundToken.test.ts src/services/assetVerificationService.test.ts src/catalog/kadoParser.test.ts src/catalog/officialAsiaParser.test.ts src/catalog/kadoCatalogService.test.ts src/config/redis.catalog.test.ts --coverage=false --runInBand
