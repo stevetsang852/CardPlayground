@@ -10,6 +10,7 @@ import routes from './api/routes';
 import { getEventCleanupService } from './services/eventCleanupService';
 import { LeaderboardService } from './services/leaderboardService';
 import { syncKadoCatalog } from './catalog/kadoCatalogService';
+import { seedCardPool } from './catalog/seedCardPool';
 
 dotenv.config();
 
@@ -47,6 +48,13 @@ async function startServer() {
       } catch (err) {
         console.warn('KADO catalog sync skipped:', (err as Error).message);
       }
+    }
+
+    try {
+      const seeded = await seedCardPool();
+      console.log('Card pool seed', seeded);
+    } catch (err) {
+      console.warn('Card pool seed skipped:', (err as Error).message);
     }
 
     const leaderboardService = new LeaderboardService(db);
