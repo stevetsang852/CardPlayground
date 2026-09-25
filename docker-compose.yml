@@ -1,0 +1,40 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: cardplayground-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - cardplayground-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cardplayground-backend
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      NODE_ENV: development
+      DATABASE_DRIVER: local
+      LOCAL_DB_PATH: /app/backend/data/local-db.json
+      REDIS_URL: redis://redis:6379
+      DEBUG_AUTH_BYPASS: "true"
+      KADO_SYNC_ON_START: "false"
+      CATALOG_PRIMARY: kado
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/data:/app/backend/data
+    profiles: ["app"]
+
+volumes:
+  cardplayground-redis:

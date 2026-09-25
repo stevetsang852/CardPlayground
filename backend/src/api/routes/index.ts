@@ -8,6 +8,7 @@ import achievementRoutes from './achievements';
 import seasonRoutes from './season';
 import authRoutes from './auth';
 import assetRoutes from './assets';
+import catalogRoutes from './catalog';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -30,5 +31,6 @@ router.use('/market', authenticate, marketRoutes);
 router.use('/achievements', authenticate, achievementRoutes);
 router.use('/season', authenticate, seasonRoutes);
 router.use('/assets', authenticate, assetRoutes);
+router.use('/catalog', authenticate, catalogRoutes);
 
 export default router;

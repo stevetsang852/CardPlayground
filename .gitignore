@@ -48,7 +48,6 @@ web_modules/
 .next
 out
 .nuxt
-dist
 .vuepress/dist
 .temp
 **/.vitepress/dist
@@ -66,5 +65,7 @@ dist
 .pnp.*
 
 # Local CardPlayground database
+backend/data/local-db.json
 backend/data/*.json
+!backend/data/catalog-snapshot.json
 serviceAccountKey.json
