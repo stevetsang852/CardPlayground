@@ -23,21 +23,11 @@ export function absoluteUrl(href: string): string {
 
 export function parsePackIndex(html: string, locale = 'mixed'): ParsedPack[] {
   const packs = new Map<string, ParsedPack>();
-  const re = /href="(\/(?:set|database\/tw|database\/cn)\/[^"]+)"[^>]*>([^<]+)<\/a>[^\n]*·\s*(\d+)張/gi;
+  const linkRe = /\[([^\]]+)\]\((\/(?:set|database\/tw|database\/cn)\/[^)]+)\)[^\d]{0,12}(\d+)\s*(?:張|cards)?/gi;
+  const hrefRe = /href="(\/(?:set|database\/tw|database\/cn)\/[^"]+)"[^>]*>([^<]+)<\/a>[^\d]{0,20}(\d+)\s*(?:張|cards)?/gi;
   let match: RegExpExecArray | null;
-  const alt = /\[([^\]]+)\]\((\/(?:set|database\/tw|database\/cn)\/[^)]+)\)\s*·\s*(\d+)張/gi;
 
-  while ((match = re.exec(html)) !== null) {
-    const sourceUrl = absoluteUrl(match[1]);
-    packs.set(sourceUrl, {
-      id: match[1].replace(/^\//, '').replace(/\//g, '_'),
-      name: match[2].trim(),
-      sourceUrl,
-      cardCount: Number(match[3]),
-      locale,
-    });
-  }
-  while ((match = alt.exec(html)) !== null) {
+  while ((match = linkRe.exec(html)) !== null) {
     const sourceUrl = absoluteUrl(match[2]);
     packs.set(sourceUrl, {
       id: match[2].replace(/^\//, '').replace(/\//g, '_'),
@@ -47,17 +37,22 @@ export function parsePackIndex(html: string, locale = 'mixed'): ParsedPack[] {
       locale,
     });
   }
+  while ((match = hrefRe.exec(html)) !== null) {
+    const sourceUrl = absoluteUrl(match[1]);
+    packs.set(sourceUrl, {
+      id: match[1].replace(/^\//, '').replace(/\//g, '_'),
+      name: match[2].trim(),
+      sourceUrl,
+      cardCount: Number(match[3]),
+      locale,
+    });
+  }
   return [...packs.values()];
 }
 
-export function parseSetCards(html: string, packId: string, packUrl: string): ParsedCard[] {
+export function parseSetCards(html: string, packId: string, _packUrl: string): ParsedCard[] {
   const cards: ParsedCard[] = [];
   const seen = new Set<string>();
-  const patterns = [
-    /\[(\d{3}|[A-Z]{3})\s+([^\]]+)\]\((\/card\/[^)]+)\)/g,
-    /href="(\/card\/[^"\?]+)"[^>]*>([^<]+)<\/a>/g,
-  ];
-
   let match: RegExpExecArray | null;
   const numbered = /\[(\d{3}|[A-Z]{3})\s+([^\]]+)\]\((\/card\/[^)]+)\)/g;
   while ((match = numbered.exec(html)) !== null) {
