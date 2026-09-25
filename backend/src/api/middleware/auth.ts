@@ -11,6 +11,11 @@ export interface AuthRequest extends Request {
   };
 }
 
+function attachPlayer(req: AuthRequest, uid: string, email?: string, bypass = false) {
+  req.user = { uid, email, bypass };
+  req.headers['x-player-id'] = uid;
+}
+
 export function getPlayerId(req: Request): string {
   const authReq = req as AuthRequest;
   if (authReq.user?.uid) return authReq.user.uid;
@@ -27,11 +32,7 @@ export async function authenticate(
 ): Promise<void> {
   try {
     if (isAuthBypassEnabled()) {
-      req.user = {
-        uid: (req.headers['x-player-id'] as string) || defaultDebugPlayerId(),
-        email: 'debug@localhost',
-        bypass: true,
-      };
+      attachPlayer(req, (req.headers['x-player-id'] as string) || defaultDebugPlayerId(), 'debug@localhost', true);
       return next();
     }
 
@@ -43,7 +44,7 @@ export async function authenticate(
     const token = authHeader.substring(7);
     const local = parsePlaygroundToken(token, authSecret());
     if (local) {
-      req.user = { uid: local.playerId, email: local.email };
+      attachPlayer(req, local.playerId, local.email);
       return next();
     }
 
@@ -51,11 +52,11 @@ export async function authenticate(
       const admin = require('firebase-admin');
       if (admin.apps?.length) {
         const decodedToken = await admin.auth().verifyIdToken(token);
-        req.user = { uid: decodedToken.uid, email: decodedToken.email };
+        attachPlayer(req, decodedToken.uid, decodedToken.email);
         return next();
       }
     } catch {
-      // fall through to invalid token
+      // fall through
     }
 
     throw new AppError(401, 'UNAUTHORIZED', 'Invalid authentication token');
