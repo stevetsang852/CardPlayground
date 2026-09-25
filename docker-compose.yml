@@ -28,7 +28,7 @@ services:
       LOCAL_DB_PATH: /app/backend/data/local-db.json
       REDIS_URL: redis://redis:6379
       DEBUG_AUTH_BYPASS: "true"
-      KADO_SYNC_ON_START: "false"
+      KADO_SYNC_ON_START: "true"
       CATALOG_PRIMARY: kado
     ports:
       - "3000:3000"
