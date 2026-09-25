@@ -1,17 +1,57 @@
 import { collections } from '../config/database';
+import { JP_HIT_AS_APP_RARITY } from '@shared/drawing/ptcgOdds';
 
 const PACKS = [
   {
-    id: 'basic', type: 'basic', name: 'Basic Pack', cost: 100, currencyType: 'soft',
-    rates: { common: 0.7, rare: 0.22, epic: 0.075, legendary: 0.005 },
+    id: 'basic',
+    type: 'basic',
+    name: 'JP Expansion Pack',
+    cost: 100,
+    currencyType: 'soft',
+    model: 'jp-sv-5',
+    cardsPerPack: 5,
+    packsPerBox: 30,
+    probabilities: {
+      legendary: JP_HIT_AS_APP_RARITY.legendary,
+      epic: JP_HIT_AS_APP_RARITY.epic,
+      rare: JP_HIT_AS_APP_RARITY.rare,
+      common: 0,
+    },
+    guaranteedLegendaryAfter: 150,
   },
   {
-    id: 'premium', type: 'premium', name: 'Premium Pack', cost: 500, currencyType: 'soft',
-    rates: { common: 0.45, rare: 0.35, epic: 0.18, legendary: 0.02 },
+    id: 'premium',
+    type: 'premium',
+    name: 'JP High Class Pack',
+    cost: 500,
+    currencyType: 'soft',
+    model: 'jp-sv-5',
+    cardsPerPack: 5,
+    packsPerBox: 10,
+    probabilities: {
+      legendary: 0.02,
+      epic: 0.35,
+      rare: 0.63,
+      common: 0,
+    },
+    guaranteedLegendaryAfter: 80,
   },
   {
-    id: 'legendary', type: 'legendary', name: 'Legendary Pack', cost: 2000, currencyType: 'soft',
-    rates: { common: 0.2, rare: 0.4, epic: 0.3, legendary: 0.1 },
+    id: 'legendary',
+    type: 'legendary',
+    name: 'God Pack Demo',
+    cost: 2000,
+    currencyType: 'soft',
+    model: 'jp-sv-5',
+    cardsPerPack: 5,
+    packsPerBox: 1,
+    probabilities: {
+      legendary: 0.15,
+      epic: 0.55,
+      rare: 0.30,
+      common: 0,
+    },
+    guaranteedLegendaryAfter: 10,
   },
 ];
 
@@ -38,16 +78,14 @@ const SEED_CARDS: Array<{ id: string; name: string; rarity: 'common' | 'rare' | 
 
 export async function seedCardPool(): Promise<{ packs: number; templates: number }> {
   for (const pack of PACKS) {
-    const existing = await collections.packConfigurations().doc(pack.id).get();
-    if (!existing.exists) {
-      await collections.packConfigurations().doc(pack.id).set({
-        ...pack,
-        sourceUrl: 'local-seed',
-        aspectRatio: '63/88',
-        cardWidthMm: 63,
-        cardHeightMm: 88,
-      });
-    }
+    await collections.packConfigurations().doc(pack.id).set({
+      ...pack,
+      sourceUrl: 'local-seed',
+      aspectRatio: '63/88',
+      cardWidthMm: 63,
+      cardHeightMm: 88,
+      attribution: 'Hit-slot rates approximate JP SV-era community box data, not an official TPC table.',
+    });
   }
 
   let added = 0;
