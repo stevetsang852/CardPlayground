@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import cardRoutes from './cards';
+import ptcgDraw from './ptcgDraw';
 import synthesisRoutes from './synthesis';
 import eventRoutes from './events';
 import socialRoutes from './social';
@@ -23,6 +24,7 @@ router.get('/version', (req, res) => {
 
 router.use('/auth', authRoutes);
 
+router.use('/cards', authenticate, ptcgDraw);
 router.use('/cards', authenticate, cardRoutes);
 router.use('/synthesis', authenticate, synthesisRoutes);
 router.use('/events', authenticate, eventRoutes);

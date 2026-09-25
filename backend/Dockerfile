@@ -1,12 +1,29 @@
-FROM node:20-alpine
+FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
+COPY tsconfig.json jest.config.js ./
 COPY backend/package.json backend/
 COPY shared/package.json shared/
 COPY client/package.json client/
-RUN npm install --ignore-scripts --workspace backend --workspace shared --omit=dev || npm install
+RUN npm install
 COPY shared shared
 COPY backend backend
+
+FROM deps AS debug
 WORKDIR /app/backend
+ENV NODE_ENV=development
+ENV DATABASE_DRIVER=local
+ENV LOCAL_DB_PATH=/app/backend/data/local-db.json
+ENV REDIS_URL=redis://database:6379
+ENV DEBUG_AUTH_BYPASS=true
+ENV KADO_SYNC_ON_START=true
 EXPOSE 3000
-CMD ["npx", "ts-node-dev", "--transpile-only", "-r", "tsconfig-paths/register", "src/index.ts"]
+CMD ["npx", "ts-node-dev", "--respawn", "--transpile-only", "-r", "tsconfig-paths/register", "src/index.ts"]
+
+FROM deps AS test
+WORKDIR /app/backend
+ENV NODE_ENV=test
+ENV DATABASE_DRIVER=local
+ENV DEBUG_AUTH_BYPASS=false
+ENV REDIS_URL=redis://database:6379
+CMD ["npx", "jest", "--coverage=false", "--runInBand", "src/config/localDatabase.test.ts", "src/config/database.test.ts", "src/config/authConfig.test.ts", "src/utils/playgroundToken.test.ts", "src/services/assetVerificationService.test.ts", "src/catalog/kadoParser.test.ts", "src/catalog/officialAsiaParser.test.ts", "src/catalog/kadoCatalogService.test.ts", "src/config/redis.catalog.test.ts", "src/catalog/ptcgOdds.backend.test.ts"]

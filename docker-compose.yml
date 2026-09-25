@@ -1,10 +1,11 @@
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: cardplayground-redis
+  database:
+    build:
+      context: .
+      dockerfile: database/Dockerfile
+    container_name: cardplayground-database
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - cardplayground-redis:/data
     healthcheck:
@@ -17,24 +18,66 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      target: debug
     container_name: cardplayground-backend
     depends_on:
-      redis:
+      database:
         condition: service_healthy
     environment:
       PORT: "3000"
       NODE_ENV: development
       DATABASE_DRIVER: local
       LOCAL_DB_PATH: /app/backend/data/local-db.json
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://database:6379
       DEBUG_AUTH_BYPASS: "true"
-      KADO_SYNC_ON_START: "false"
+      KADO_SYNC_ON_START: "true"
       CATALOG_PRIMARY: kado
+      CORS_ORIGIN: http://localhost:5173
     ports:
       - "3000:3000"
     volumes:
       - ./backend/data:/app/backend/data
-    profiles: ["app"]
+      - ./backend/src:/app/backend/src
+
+  frontend:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      target: debug
+    container_name: cardplayground-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:3000/api/v1
+      VITE_WS_URL: ws://localhost:3000/ws
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client/src:/app/client/src
+
+  backend-test:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: test
+    container_name: cardplayground-backend-test
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      DATABASE_DRIVER: local
+      REDIS_URL: redis://database:6379
+      DEBUG_AUTH_BYPASS: "false"
+    profiles: ["test"]
+
+  frontend-test:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      target: test
+    container_name: cardplayground-frontend-test
+    profiles: ["test"]
 
 volumes:
   cardplayground-redis:

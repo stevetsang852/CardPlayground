@@ -23,8 +23,8 @@ export function absoluteUrl(href: string): string {
 
 export function parsePackIndex(html: string, locale = 'mixed'): ParsedPack[] {
   const packs = new Map<string, ParsedPack>();
-  const linkRe = /\[([^\]]+)\]\((\/(?:set|database\/tw|database\/cn)\/[^)]+)\)[^\d]{0,12}(\d+)\s*(?:張|cards)?/gi;
-  const hrefRe = /href="(\/(?:set|database\/tw|database\/cn)\/[^"]+)"[^>]*>([^<]+)<\/a>[^\d]{0,20}(\d+)\s*(?:張|cards)?/gi;
+  const linkRe = /\[([^\]]+)\]\((\/(?:set|database\/tw|database\/cn)\/[^)]+)\)[^\d]{0,16}(\d+)\s*(?:張|cards)?/gi;
+  const hrefRe = /href="(\/(?:set|database\/tw|database\/cn)\/[^"]+)"[^>]*>([^<]+)<\/a>[^\d]{0,24}(\d+)\s*(?:張|cards)?/gi;
   let match: RegExpExecArray | null;
 
   while ((match = linkRe.exec(html)) !== null) {
@@ -53,35 +53,36 @@ export function parsePackIndex(html: string, locale = 'mixed'): ParsedPack[] {
 export function parseSetCards(html: string, packId: string, _packUrl: string): ParsedCard[] {
   const cards: ParsedCard[] = [];
   const seen = new Set<string>();
-  let match: RegExpExecArray | null;
-  const numbered = /\[(\d{3}|[A-Z]{3})\s+([^\]]+)\]\((\/card\/[^)]+)\)/g;
-  while ((match = numbered.exec(html)) !== null) {
-    const sourceUrl = absoluteUrl(match[3]);
-    if (seen.has(sourceUrl)) continue;
+
+  const push = (href: string, name: string, number?: string) => {
+    const sourceUrl = absoluteUrl(href);
+    if (seen.has(sourceUrl)) return;
     seen.add(sourceUrl);
     cards.push({
-      id: match[3].replace(/^\/card\//, ''),
-      name: match[2].trim(),
-      number: match[1],
+      id: href.replace(/^\/card\//, '').replace(/\//g, '_'),
+      name: name.trim(),
+      number,
       sourceUrl,
       packId,
     });
+  };
+
+  let match: RegExpExecArray | null;
+  const numbered = /\[(\d{3}|[A-Z]{3})\s+([^\]]+)\]\((\/card\/[^)]+)\)/g;
+  while ((match = numbered.exec(html)) !== null) {
+    push(match[3], match[2], match[1]);
+  }
+
+  const bullet = /\[([^\]]+)\]\((\/card\/[^)]+)\)\s*·\s*(\d{3}|[A-Z]{3})/g;
+  while ((match = bullet.exec(html)) !== null) {
+    push(match[2], match[1], match[3]);
   }
 
   const hrefRe = /href="(\/card\/[^"\?]+)"[^>]*>([^<]+)<\/a>/g;
   while ((match = hrefRe.exec(html)) !== null) {
-    const sourceUrl = absoluteUrl(match[1]);
-    if (seen.has(sourceUrl)) continue;
-    seen.add(sourceUrl);
     const label = match[2].trim();
     const num = label.match(/^(\d{3}|[A-Z]{3})\s+(.+)$/);
-    cards.push({
-      id: match[1].replace(/^\/card\//, ''),
-      name: num ? num[2] : label,
-      number: num ? num[1] : undefined,
-      sourceUrl,
-      packId,
-    });
+    push(match[1], num ? num[2] : label, num ? num[1] : undefined);
   }
 
   return cards;
