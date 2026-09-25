@@ -1,33 +1,13 @@
-/* Upstream: simeydotme/pokemon-cards-css @ main, GPL-3.0 */
+/* simeydotme/pokemon-cards-css @ main — GPL-3.0 */
 @import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/base.css");
 @import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/basic.css");
 @import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/reverse-holo.css");
 @import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/regular-holo.css");
+@import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/radiant-holo.css");
 @import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/v-regular.css");
+@import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/v-full-art.css");
+@import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/trainer-gallery-holo.css");
+@import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/rainbow-holo.css");
 @import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/cosmos-holo.css");
 @import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/secret-rare.css");
-
-/* Map our rarity shells onto upstream .card foil types */
-.drawn-card.common,
-.inv-card.common,
-.detail-card.common {
-  /* basic / reverse */
-}
-
-.drawn-card.rare,
-.inv-card.rare,
-.detail-card.rare {
-  /* regular-holo */
-}
-
-.drawn-card.epic,
-.inv-card.epic,
-.detail-card.epic {
-  /* v-regular */
-}
-
-.drawn-card.legendary,
-.inv-card.legendary,
-.detail-card.legendary {
-  /* cosmos-holo / secret-rare */
-}
+@import url("https://cdn.jsdelivr.net/gh/simeydotme/pokemon-cards-css@main/public/css/cards/shiny-rare.css");
