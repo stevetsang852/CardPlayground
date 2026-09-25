@@ -37,3 +37,18 @@ jobs:
           DEBUG_AUTH_BYPASS: false
           REDIS_URL: redis://127.0.0.1:6379
         run: npx jest src/config/localDatabase.test.ts src/config/database.test.ts src/config/authConfig.test.ts src/utils/playgroundToken.test.ts src/services/assetVerificationService.test.ts src/catalog/kadoParser.test.ts src/catalog/officialAsiaParser.test.ts src/catalog/kadoCatalogService.test.ts src/config/redis.catalog.test.ts src/catalog/ptcgOdds.backend.test.ts --coverage=false --runInBand
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build database image
+        run: docker build -f database/Dockerfile -t cardplayground-database .
+      - name: Build backend debug and test images
+        run: |
+          docker build -f backend/Dockerfile --target debug -t cardplayground-backend:debug .
+          docker build -f backend/Dockerfile --target test -t cardplayground-backend:test .
+      - name: Build frontend debug and test images
+        run: |
+          docker build -f client/Dockerfile --target debug -t cardplayground-frontend:debug .
+          docker build -f client/Dockerfile --target test -t cardplayground-frontend:test .
