@@ -3,14 +3,26 @@ services:
     build:
       context: .
       dockerfile: database/Dockerfile
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   backend-test:
     build:
       context: .
       dockerfile: backend/Dockerfile
       target: test
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     environment:
       NODE_ENV: test
       DATABASE_DRIVER: local
       REDIS_URL: redis://database:6379
+      DEBUG_AUTH_BYPASS: "false"
+  frontend-test:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      target: test

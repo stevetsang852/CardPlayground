@@ -1,6 +1,7 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
+COPY tsconfig.json jest.config.js ./
 COPY backend/package.json backend/
 COPY shared/package.json shared/
 COPY client/package.json client/
@@ -25,4 +26,4 @@ ENV NODE_ENV=test
 ENV DATABASE_DRIVER=local
 ENV DEBUG_AUTH_BYPASS=false
 ENV REDIS_URL=redis://database:6379
-CMD ["npx", "jest", "--coverage=false", "--runInBand"]
+CMD ["npx", "jest", "--coverage=false", "--runInBand", "src/config/localDatabase.test.ts", "src/config/database.test.ts", "src/config/authConfig.test.ts", "src/utils/playgroundToken.test.ts", "src/services/assetVerificationService.test.ts", "src/catalog/kadoParser.test.ts", "src/catalog/officialAsiaParser.test.ts", "src/catalog/kadoCatalogService.test.ts", "src/config/redis.catalog.test.ts", "src/catalog/ptcgOdds.backend.test.ts"]

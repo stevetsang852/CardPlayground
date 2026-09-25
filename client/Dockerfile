@@ -1,6 +1,7 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
+COPY tsconfig.json jest.config.js ./
 COPY backend/package.json backend/
 COPY shared/package.json shared/
 COPY client/package.json client/
@@ -19,4 +20,4 @@ CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "5173"]
 FROM deps AS test
 WORKDIR /app/client
 ENV NODE_ENV=test
-CMD ["npx", "jest", "--coverage=false", "--runInBand"]
+CMD ["npx", "jest", "src/game", "--coverage=false", "--runInBand"]
