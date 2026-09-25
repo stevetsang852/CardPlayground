@@ -14,6 +14,11 @@ const RARITY_STYLES: Record<Rarity, { border: string; text: string; label: strin
   mythic:    { border: 'border-pink-400',   text: 'text-pink-300',   label: 'Mythic' },
 };
 
+function toInfo(card: ICardInstance): DrawnCardInfo {
+  const template = CARD_TEMPLATES.find(t => t.id === card.cardId);
+  return { icon: template?.icon ?? '🃏', name: template?.name ?? `#${card.cardId}`, rarity: card.rarity };
+}
+
 function CardResultItem({ card }: { card: ICardInstance }) {
   const template = CARD_TEMPLATES.find(t => t.id === card.cardId);
   const style = RARITY_STYLES[card.rarity];
@@ -53,11 +58,8 @@ export function DrawPage() {
     setPlayer(result.updatedPlayer);
     await addCards(result.cards);
     incrementActionCount();
-    const infos: DrawnCardInfo[] = result.cards.map(card => {
-      const template = CARD_TEMPLATES.find(t => t.id === card.cardId);
-      return { icon: template?.icon ?? '🃏', name: template?.name ?? `#${card.cardId}`, rarity: card.rarity };
-    });
-    new PackOpenAnimation().play(selectedPack.icon, infos, () => {
+    const firstPack = result.packs[0]?.cards ?? result.cards.slice(0, 5);
+    new PackOpenAnimation().play(selectedPack.icon, firstPack.map(toInfo), () => {
       setLastResult(result);
       setShowReveal(true);
       setIsDrawing(false);
@@ -67,7 +69,7 @@ export function DrawPage() {
   return (
     <div className="space-y-5">
       <h2 className="text-xl font-bold text-game-accent">Open packs</h2>
-      <p className="text-xs text-gray-400">Each hit rate uses a different foil from simeydotme/pokemon-cards-css.</p>
+      <p className="text-xs text-gray-400">Cinematic shows the first pack (5 cards, hit last). Grid lists every pack.</p>
       <div className="bg-game-surface border border-game-border rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
         <div>
           <div className="text-purple-400 text-xs mb-1">Balance</div>
