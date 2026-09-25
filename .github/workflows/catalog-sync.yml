@@ -1,5 +1,6 @@
 name: catalog-sync
 
+# Scheduled jobs only fire from the default branch (main) after merge.
 on:
   schedule:
     - cron: "0 0 * * *"
@@ -40,6 +41,8 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -49,7 +52,7 @@ jobs:
       - name: Sync up to 3 public sets
         continue-on-error: true
         id: sync
-        run: npx ts-node -r tsconfig-paths/register src/catalog/runSync.ts
+        run: npx ts-node-dev --transpile-only --exit-child -r tsconfig-paths/register src/catalog/runSync.ts
       - name: Upload catalog artifact
         if: always()
         uses: actions/upload-artifact@v4
