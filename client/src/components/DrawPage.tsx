@@ -4,6 +4,7 @@ import { drawCards, PACK_CONFIGS, type PackConfig, type DrawResult } from '../ga
 import { CARD_TEMPLATES, type Rarity } from '../cardData';
 import type { ICardInstance } from '../db';
 import { PackOpenAnimation, type DrawnCardInfo } from '../animations';
+import { foilForCard } from '../game/foilMap';
 
 const RARITY_STYLES: Record<Rarity, { border: string; text: string; label: string }> = {
   common:    { border: 'border-gray-500',   text: 'text-gray-300',   label: 'Common' },
@@ -16,9 +17,10 @@ const RARITY_STYLES: Record<Rarity, { border: string; text: string; label: strin
 function CardResultItem({ card }: { card: ICardInstance }) {
   const template = CARD_TEMPLATES.find(t => t.id === card.cardId);
   const style = RARITY_STYLES[card.rarity];
+  const foil = card.foil || foilForCard(undefined, card.rarity);
   return (
     <div className="card-container">
-      <div className={`drawn-card ptcg-card ptcg-card-sm ${card.rarity}`}>
+      <div className={`card drawn-card ptcg-card ptcg-card-sm ${card.rarity}`} data-rarity={foil}>
         <div className="card__shine" />
         <div className="card__glare" />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: 6, background: 'linear-gradient(160deg, #1e1040 0%, #0e1830 100%)', borderRadius: 10 }}>
@@ -65,7 +67,7 @@ export function DrawPage() {
   return (
     <div className="space-y-5">
       <h2 className="text-xl font-bold text-game-accent">Open packs</h2>
-      <p className="text-xs text-gray-400">JP SV model: 5 cards = 3C + 1U/R + hit slot. SAR ~1/150 packs, UR ~1/300.</p>
+      <p className="text-xs text-gray-400">Each hit rate uses a different foil from simeydotme/pokemon-cards-css.</p>
       <div className="bg-game-surface border border-game-border rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
         <div>
           <div className="text-purple-400 text-xs mb-1">Balance</div>
