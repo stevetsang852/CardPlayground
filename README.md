@@ -69,7 +69,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
   -d '{"playerId":"p1","secret":"cardplayground-local-dev-secret"}'
 ```
 
-Use `Authorization: ****** on later calls. Firebase ID tokens still work if Firebase Admin is initialized.
+Use `Authorization: Bearer TOKEN_FROM_LOGIN` on later calls. Firebase ID tokens still work if Firebase Admin is initialized.
 
 `GET /api/v1/auth/status` shows whether bypass is on.
 
@@ -79,7 +79,7 @@ Server inventory is the source of truth. Client sends the card ids it thinks it 
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/assets/verify \
-  -H 'Authorization: ******' \
+  -H 'Authorization: Bearer TOKEN_FROM_LOGIN' \
   -H 'content-type: application/json' \
   -d '{"cardIds":["c1","c2"]}'
 ```
