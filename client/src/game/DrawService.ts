@@ -3,6 +3,7 @@ import { CARD_TEMPLATES, type Rarity } from '../cardData';
 import type { ICardInstance } from '../db';
 import type { PlayerState, ActiveEvent } from '../store/gameStore';
 import { hitKindToAppRarity, rollJpHitSlot } from './ptcgOdds';
+import { foilForCard } from './foilMap';
 
 export interface PackConfig {
   id: string;
@@ -77,29 +78,30 @@ function pick(rarity: Rarity) {
   return CARD_TEMPLATES[0]!;
 }
 
-function instanceOf(rarity: Rarity): ICardInstance {
+function instanceOf(rarity: Rarity, hitKind?: string): ICardInstance {
   const template = pick(rarity);
   return {
     cardId: template.id,
     rarity: template.rarity,
     level: 1,
     obtainedAt: Date.now(),
+    foil: foilForCard(hitKind, rarity),
   };
 }
 
 function openOnePack(pack: PackConfig, pityReady: boolean): OpenedPack {
   const cards: ICardInstance[] = [
-    instanceOf('common'),
-    instanceOf('common'),
-    instanceOf('common'),
-    instanceOf('rare'),
+    instanceOf('common', 'c'),
+    instanceOf('common', 'c'),
+    instanceOf('common', 'c'),
+    instanceOf('rare', 'u'),
   ];
   let hitKind = rollJpHitSlot(cryptoRandom.nextFloat());
   if (pack.id === 'premium' && hitKind === 'r' && cryptoRandom.nextFloat() < 0.15) hitKind = 'ar';
   if (pack.id === 'legendary' && (hitKind === 'r' || hitKind === 'rr')) hitKind = cryptoRandom.nextFloat() < 0.4 ? 'sar' : 'sr';
   if (pityReady) hitKind = 'sar';
   const hitRarity = hitKindToAppRarity(hitKind) as Rarity;
-  const hit = instanceOf(hitRarity);
+  const hit = instanceOf(hitRarity, hitKind);
   hit.rarity = hitRarity;
   cards.push(hit);
   return { hitKind, hitRarity, cards };
