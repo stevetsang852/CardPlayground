@@ -1,0 +1,16 @@
+services:
+  database:
+    build:
+      context: .
+      dockerfile: database/Dockerfile
+  backend-test:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: test
+    depends_on:
+      - database
+    environment:
+      NODE_ENV: test
+      DATABASE_DRIVER: local
+      REDIS_URL: redis://database:6379
