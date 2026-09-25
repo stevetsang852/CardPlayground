@@ -1,5 +1,6 @@
 import { cryptoRandom } from './CryptoRandom';
-import { CARD_TEMPLATES, type Rarity } from '../cardData';
+import type { Rarity } from '../cardData';
+import { PTCG_TEMPLATES, ptcgPoolByRarity } from './ptcgPool';
 import type { ICardInstance } from '../db';
 import type { PlayerState, ActiveEvent } from '../store/gameStore';
 import { hitKindToAppRarity, rollJpHitSlot } from './ptcgOdds';
@@ -36,7 +37,7 @@ export const PACK_CONFIGS: PackConfig[] = [
     cost: 100,
     cardsPerPack: 5,
     model: 'jp-sv-5',
-    description: '5 cards · 3C + 1U/R + hit slot (JP SV rates)',
+    description: '5 cards · M6a 30th CELEBRATION pool',
     pityLegendaryAt: 150,
   },
   {
@@ -61,21 +62,13 @@ export const PACK_CONFIGS: PackConfig[] = [
   },
 ];
 
-const CARD_POOL: Record<Rarity, typeof CARD_TEMPLATES> = {
-  common: CARD_TEMPLATES.filter(c => c.rarity === 'common'),
-  rare: CARD_TEMPLATES.filter(c => c.rarity === 'rare'),
-  epic: CARD_TEMPLATES.filter(c => c.rarity === 'epic'),
-  legendary: CARD_TEMPLATES.filter(c => c.rarity === 'legendary'),
-  mythic: CARD_TEMPLATES.filter(c => c.rarity === 'mythic'),
-};
-
 function pick(rarity: Rarity) {
   const order: Rarity[] = [rarity, 'rare', 'common', 'epic', 'legendary', 'mythic'];
   for (const r of order) {
-    const pool = CARD_POOL[r];
-    if (pool && pool.length) return pool[cryptoRandom.nextInt(0, pool.length - 1)]!;
+    const pool = ptcgPoolByRarity(r);
+    if (pool.length) return pool[cryptoRandom.nextInt(0, pool.length - 1)]!;
   }
-  return CARD_TEMPLATES[0]!;
+  return PTCG_TEMPLATES[0]!;
 }
 
 function instanceOf(rarity: Rarity, hitKind?: string): ICardInstance {

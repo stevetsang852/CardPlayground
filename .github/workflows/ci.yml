@@ -30,13 +30,13 @@ jobs:
       - name: Test frontend draw and foil
         working-directory: client
         run: npx jest src/game --coverage=false --runInBand
-      - name: Test local DB, auth, assets, catalog, redis, odds
+      - name: Test local DB, auth, assets, catalog, snapshot, redis, odds
         working-directory: backend
         env:
           DATABASE_DRIVER: local
           DEBUG_AUTH_BYPASS: false
           REDIS_URL: redis://127.0.0.1:6379
-        run: npx jest src/config/localDatabase.test.ts src/config/database.test.ts src/config/authConfig.test.ts src/utils/playgroundToken.test.ts src/services/assetVerificationService.test.ts src/catalog/kadoParser.test.ts src/catalog/officialAsiaParser.test.ts src/catalog/kadoCatalogService.test.ts src/config/redis.catalog.test.ts src/catalog/ptcgOdds.backend.test.ts --coverage=false --runInBand
+        run: npx jest src/config/localDatabase.test.ts src/config/database.test.ts src/config/authConfig.test.ts src/utils/playgroundToken.test.ts src/services/assetVerificationService.test.ts src/catalog/kadoParser.test.ts src/catalog/officialAsiaParser.test.ts src/catalog/kadoCatalogService.test.ts src/catalog/kadoSnapshot.test.ts src/config/redis.catalog.test.ts src/catalog/ptcgOdds.backend.test.ts --coverage=false --runInBand
 
   docker:
     runs-on: ubuntu-latest

@@ -1,37 +1,21 @@
 # CardPlayground
 
-Card collection playground with gacha, synthesis, random events, and social features.
+Local card playground: JP-style 5-card packs, KADO public catalog, Redis cache, Docker debug stack.
 
-## Project Structure
+## Layout
 
 ```
-CardPlayground/
-├── backend/          # Express + WebSocket
-├── client/           # Vite + Three.js
-├── shared/           # Shared types
-└── .kiro/            # Spec files
+backend/     Express + WS + local JSON DB
+client/       Vite + React + Three.js pack cinematic
+shared/       Draw odds + types
+database/     Redis Dockerfile
+.github/      ci.yml + catalog-sync.yml
 ```
 
-## Technology Stack
-
-### Backend
-- Node.js + TypeScript + Express
-- WebSocket (`ws`)
-- **Database (default): local JSON file** — `backend/data/local-db.json`
-- Optional: Firebase Firestore (`DATABASE_DRIVER=firestore`)
-- Optional cache: Redis (skipped if Redis is down)
-- Jest + fast-check
-
-### Client
-- Vite, Three.js, GSAP
-- Firebase Auth still optional for production identity
-
-## Setup
-
-Prerequisites: Node.js 18+. Redis and Firebase are **not** required for local play.
+## Quick start
 
 ```bash
-npm run install:all
+npm install
 cp backend/.env.example backend/.env
 npm run dev:backend
 npm run dev:client
@@ -42,65 +26,87 @@ DATABASE_DRIVER=local
 LOCAL_DB_PATH=./data/local-db.json
 DEBUG_AUTH_BYPASS=true
 DEBUG_PLAYER_ID=debug-player
-AUTH_SECRET=cardplayground-local-dev-secret
+KADO_SYNC_ON_START=true
+KADO_SYNC_MAX_SETS=3
+REDIS_URL=redis://127.0.0.1:6379
 ```
 
-Data survives backend restarts in that JSON file. Delete the file to reset.
+Docker:
 
-To use Firestore later:
-
-```text
-DATABASE_DRIVER=firestore
-FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
-FIREBASE_DATABASE_URL=https://your-project.firebaseio.com
+```bash
+docker compose up --build
+# http://localhost:5173  API http://localhost:3000
 ```
+
+## Card catalog (KADO / official HK)
+
+Primary public pages (no `kado.hk/api/`):
+
+- https://www.kado.hk/database
+- https://www.kado.hk/database/tw
+- fallback https://asia.pokemon-card.com/hk/card-search/
+
+On boot the backend:
+
+1. `syncKadoCatalog()` — up to `KADO_SYNC_MAX_SETS` sets, delay + timeout
+2. `seedCardPool()` — writes snapshot cards (M6a 30th CELEBRATION) into `cardTemplates`
+
+Check what loaded:
+
+```bash
+curl -H 'Authorization: Bearer dev' http://localhost:3000/api/v1/catalog/status
+curl -H 'Authorization: Bearer dev' http://localhost:3000/api/v1/catalog/cards
+curl -X POST -H 'Authorization: Bearer dev' -H 'content-type: application/json' \
+  -d '{"force":true}' http://localhost:3000/api/v1/catalog/sync
+```
+
+Manual refresh:
+
+```bash
+npm run sync:catalog
+```
+
+Writes `backend/data/catalog-snapshot.json` + `local-db.json`.
+
+### GitHub Action: daily download
+
+`.github/workflows/catalog-sync.yml`
+
+- cron `0 0 * * *` UTC (08:00 HKT) **only runs after this file is on `main`**
+- `workflow_dispatch` for a manual run
+- max 3 sets, polite delay, does not call `kado.hk/api/`
+- live fetch failure does **not** fail the whole repo CI (`continue-on-error`)
+- uploads artifact `catalog-snapshot`
+- commits `backend/data/catalog-snapshot.json` if under 1.5 MB
+
+Trigger now: Actions → catalog-sync → Run workflow.
+
+## Pack odds
+
+JP SV model: 5 cards = 3C + 1U/R + hit slot (UR/SAR/SR/AR/RR/R).
+`GET /api/v1/cards/odds`  `POST /api/v1/cards/open-pack`
 
 ## Auth
 
-Game APIs (`/cards`, `/synthesis`, `/events`, `/social`, `/market`, `/achievements`, `/season`, `/assets`) require auth.
+`DEBUG_AUTH_BYPASS=true` uses `X-Player-Id` / `DEBUG_PLAYER_ID`.
+Otherwise `POST /api/v1/auth/login` then `Authorization: Bearer`.
 
-**Debug bypass** (`DEBUG_AUTH_BYPASS=true`): no auth verification. Player id comes from `X-Player-Id` or `DEBUG_PLAYER_ID`.
-
-**Token mode** (`DEBUG_AUTH_BYPASS=false`):
-
-```bash
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H 'content-type: application/json' \
-  -d '{"playerId":"p1","secret":"cardplayground-local-dev-secret"}'
-```
-
-Use `Authorization: Bearer TOKEN_FROM_LOGIN` on later calls. Firebase ID tokens still work if Firebase Admin is initialized.
-
-`GET /api/v1/auth/status` shows whether bypass is on.
-
-## Client asset check
-
-Server inventory is the source of truth. Client sends the card ids it thinks it owns:
+## Tests / CI
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/assets/verify \
-  -H 'Authorization: Bearer TOKEN_FROM_LOGIN' \
-  -H 'content-type: application/json' \
-  -d '{"cardIds":["c1","c2"]}'
+# pack odds
+npx jest --workspace=shared src/drawing/ptcgPackOdds.test.ts --coverage=false
+# frontend draw
+npx jest --workspace=client src/game --coverage=false
+# catalog parsers + snapshot
+npx jest --workspace=backend src/catalog --coverage=false
 ```
 
-Response:
+`.github/workflows/ci.yml`
 
-- `valid` — false if the client reports cards the server does not have
-- `extraOnClient` — suspected extra / tampered cards
-- `missingOnClient` — server cards the client omitted
-- `serverCardIds` — authoritative list
-
-## Testing
-
-```bash
-npm test
-```
-
-## API
-- REST: `http://localhost:3000/api/v1`
-- WebSocket: `ws://localhost:3000/ws`
+- `local-db` — Jest (odds, foil, local DB, auth, KADO parsers, snapshot)
+- `docker` — build database / backend / frontend images
 
 ## License
 
-Proprietary - All rights reserved
+Proprietary. Card names/set lists attributed to public KADO / TPC pages.

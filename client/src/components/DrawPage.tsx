@@ -1,26 +1,27 @@
 import { useState, useCallback } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { drawCards, PACK_CONFIGS, type PackConfig, type DrawResult } from '../game/DrawService';
-import { CARD_TEMPLATES, type Rarity } from '../cardData';
+import { type Rarity } from '../cardData';
+import { findPtcgTemplate } from '../game/ptcgPool';
 import type { ICardInstance } from '../db';
 import { PackOpenAnimation, type DrawnCardInfo } from '../animations';
 import { foilForCard } from '../game/foilMap';
 
-const RARITY_STYLES: Record<Rarity, { border: string; text: string; label: string }> = {
-  common:    { border: 'border-gray-500',   text: 'text-gray-300',   label: 'Common' },
-  rare:      { border: 'border-blue-500',   text: 'text-blue-300',   label: 'Rare' },
-  epic:      { border: 'border-purple-500', text: 'text-purple-300', label: 'Epic' },
-  legendary: { border: 'border-yellow-400', text: 'text-yellow-300', label: 'Legendary' },
-  mythic:    { border: 'border-pink-400',   text: 'text-pink-300',   label: 'Mythic' },
+const RARITY_STYLES: Record<Rarity, { text: string; label: string }> = {
+  common:    { text: 'text-gray-300',   label: 'Common' },
+  rare:      { text: 'text-blue-300',   label: 'Rare' },
+  epic:      { text: 'text-purple-300', label: 'Epic' },
+  legendary: { text: 'text-yellow-300', label: 'Legendary' },
+  mythic:    { text: 'text-pink-300',   label: 'Mythic' },
 };
 
 function toInfo(card: ICardInstance): DrawnCardInfo {
-  const template = CARD_TEMPLATES.find(t => t.id === card.cardId);
-  return { icon: template?.icon ?? '🃏', name: template?.name ?? `#${card.cardId}`, rarity: card.rarity };
+  const template = findPtcgTemplate(card.cardId);
+  return { icon: template?.name ?? '🃏', name: template?.name ?? `#${card.cardId}`, rarity: card.rarity };
 }
 
 function CardResultItem({ card }: { card: ICardInstance }) {
-  const template = CARD_TEMPLATES.find(t => t.id === card.cardId);
+  const template = findPtcgTemplate(card.cardId);
   const style = RARITY_STYLES[card.rarity];
   const foil = card.foil || foilForCard(undefined, card.rarity);
   return (
@@ -28,10 +29,11 @@ function CardResultItem({ card }: { card: ICardInstance }) {
       <div className={`card drawn-card ptcg-card ptcg-card-sm ${card.rarity}`} data-rarity={foil}>
         <div className="card__shine" />
         <div className="card__glare" />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: 6, background: 'linear-gradient(160deg, #1e1040 0%, #0e1830 100%)', borderRadius: 10 }}>
-          <span style={{ fontSize: 32 }}>{template?.icon ?? '🃏'}</span>
-          <span className={`text-center font-bold ${style.text}`} style={{ fontSize: 9 }}>{template?.name ?? `#${card.cardId}`}</span>
-          <span className={`font-bold uppercase ${style.text}`} style={{ fontSize: 8 }}>{style.label}</span>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 4, borderRadius: 10, overflow: 'hidden' }}>
+          {template?.imageUrl ? (
+            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0e1830' }} />
+          ) : null}
+          <span className={`relative font-bold ${style.text}`} style={{ fontSize: 8, background: 'rgba(0,0,0,0.55)', padding: '1px 4px', borderRadius: 4 }}>{template?.name ?? `#${card.cardId}`}</span>
         </div>
       </div>
     </div>
@@ -69,7 +71,7 @@ export function DrawPage() {
   return (
     <div className="space-y-5">
       <h2 className="text-xl font-bold text-game-accent">Open packs</h2>
-      <p className="text-xs text-gray-400">Cinematic shows the first pack (5 cards, hit last). Grid lists every pack.</p>
+      <p className="text-xs text-gray-400">M6a 30th CELEBRATION names + official Pokemon artwork.</p>
       <div className="bg-game-surface border border-game-border rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
         <div>
           <div className="text-purple-400 text-xs mb-1">Balance</div>
