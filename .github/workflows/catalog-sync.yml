@@ -1,0 +1,81 @@
+name: catalog-sync
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: catalog-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: daily-limited-catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_DRIVER: local
+      LOCAL_DB_PATH: ./data/local-db.json
+      REDIS_URL: redis://127.0.0.1:6379
+      CATALOG_PRIMARY: kado
+      KADO_SYNC_MAX_SETS: "3"
+      KADO_REQUEST_DELAY_MS: "800"
+      KADO_CATALOG_TTL_HOURS: "24"
+      KADO_SYNC_ON_START: "false"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install workspace deps
+        working-directory: .
+        run: npm install
+      - name: Sync up to 3 public sets
+        continue-on-error: true
+        id: sync
+        run: npx ts-node -r tsconfig-paths/register src/catalog/runSync.ts
+      - name: Upload catalog artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-snapshot
+          path: |
+            backend/data/catalog-snapshot.json
+            backend/data/local-db.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Commit snapshot if small
+        if: hashFiles('backend/data/catalog-snapshot.json') != ''
+        working-directory: .
+        run: |
+          SIZE=$(wc -c < backend/data/catalog-snapshot.json)
+          echo "snapshot bytes=$SIZE"
+          if [ "$SIZE" -gt 1500000 ]; then
+            echo "Snapshot too large to commit; artifact only"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/data/catalog-snapshot.json
+          if git diff --cached --quiet; then
+            echo "No snapshot change"
+            exit 0
+          fi
+          git commit -m "chore: refresh limited card catalog snapshot"
+          git push
