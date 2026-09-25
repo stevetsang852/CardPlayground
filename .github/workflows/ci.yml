@@ -22,4 +22,4 @@ jobs:
         env:
           DATABASE_DRIVER: local
           DEBUG_AUTH_BYPASS: false
-        run: npx jest src/config/localDatabase.test.ts src/config/database.test.ts src/config/authConfig.test.ts src/utils/playgroundToken.test.ts src/services/assetVerificationService.test.ts src/catalog/kadoParser.test.ts src/catalog/kadoCatalogService.test.ts --coverage=false --runInBand
+        run: npx jest src/config/localDatabase.test.ts src/config/database.test.ts src/config/authConfig.test.ts src/utils/playgroundToken.test.ts src/services/assetVerificationService.test.ts src/catalog/kadoParser.test.ts src/catalog/officialAsiaParser.test.ts src/catalog/kadoCatalogService.test.ts --coverage=false --runInBand
