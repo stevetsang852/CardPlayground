@@ -19,10 +19,9 @@ function CardResultItem({ card }: { card: ICardInstance }) {
 
   return (
     <div className="card-container">
-      <div className={`drawn-card ${card.rarity}`} style={{ width: 90, height: 128 }}>
+      <div className={`drawn-card ptcg-card ptcg-card-sm ${card.rarity}`}>
         <div className="card__shine" />
         <div className="card__glare" />
-        {/* Card face */}
         <div
           style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
@@ -65,19 +64,15 @@ export function DrawPage() {
       setShowReveal(false);
 
       const result = drawCards(selectedPack, count, player, activeEvents);
-
-      // Deduct cost and persist cards
       setPlayer(result.updatedPlayer);
       await addCards(result.cards);
       incrementActionCount();
 
-      // Map drawn cards to animation info
       const drawnCardInfos: DrawnCardInfo[] = result.cards.map(card => {
         const template = CARD_TEMPLATES.find(t => t.id === card.cardId);
         return { icon: template?.icon ?? '🃏', name: template?.name ?? `Card #${card.cardId}`, rarity: card.rarity };
       });
 
-      // Play pack-open cinematic, then show the card list
       new PackOpenAnimation().play(selectedPack.icon, drawnCardInfos, () => {
         setLastResult(result);
         setShowReveal(true);
@@ -89,9 +84,7 @@ export function DrawPage() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold text-game-accent">🎴 Draw Cards</h2>
-
-      {/* Balance & pity info */}
+      <h2 className="text-xl font-bold text-game-accent">🃏 Draw Cards</h2>
       <div className="bg-game-surface border border-game-border rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
         <div>
           <div className="text-purple-400 text-xs mb-1">Balance</div>
@@ -107,7 +100,6 @@ export function DrawPage() {
         </div>
       </div>
 
-      {/* Pack selection */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {PACK_CONFIGS.map(pack => {
           const isSelected = selectedPack.id === pack.id;
@@ -125,70 +117,35 @@ export function DrawPage() {
               <div className="font-bold text-white text-sm">{pack.name}</div>
               <div className="text-game-gold text-sm font-semibold">🪙 {pack.cost.toLocaleString()}</div>
               <div className="text-gray-400 text-xs mt-1">{pack.description}</div>
-              <div className="mt-2 text-xs text-gray-500 space-y-0.5">
-                <div>Legendary pity: {pack.pityLegendaryAt} draws</div>
-                <div>Mythic pity: {pack.pityMythicAt} draws</div>
-              </div>
             </button>
           );
         })}
       </div>
 
-      {/* Draw buttons */}
       <div className="flex gap-3">
         <button
           onClick={() => handleDraw(1)}
           disabled={!canAfford(1) || isDrawing}
           className="flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-purple-700 hover:bg-purple-600 disabled:opacity-40 disabled:cursor-not-allowed text-white"
         >
-          {isDrawing ? '⏳ Drawing…' : `Single Draw — 🪙 ${selectedPack.cost.toLocaleString()}`}
+          {isDrawing ? 'Drawing…' : `Single Draw — ${selectedPack.cost}`}
         </button>
         <button
           onClick={() => handleDraw(10)}
           disabled={!canAfford(10) || isDrawing}
           className="flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-gradient-to-r from-purple-700 to-pink-700 hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed text-white"
         >
-          {isDrawing ? '⏳ Drawing…' : `10-Pull — 🪙 ${(selectedPack.cost * 10).toLocaleString()}`}
+          {isDrawing ? 'Drawing…' : `10-Pull — ${selectedPack.cost * 10}`}
         </button>
       </div>
 
-      {!canAfford(1) && (
-        <p className="text-red-400 text-xs text-center">
-          Insufficient coins. Visit the Shop to get more currency.
-        </p>
-      )}
-
-      {/* Card reveal list */}
       {showReveal && lastResult && (
         <div className="bg-game-surface border border-game-border rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white">
-              🎉 You got {lastResult.cards.length} card{lastResult.cards.length !== 1 ? 's' : ''}!
-            </h3>
-            <button
-              onClick={() => setShowReveal(false)}
-              className="text-gray-500 hover:text-gray-300 text-sm"
-            >
-              ✕ Close
-            </button>
-          </div>
+          <h3 className="font-bold text-white">You got {lastResult.cards.length} cards</h3>
           <div className="flex flex-wrap gap-3 justify-center py-2 max-h-96 overflow-y-auto">
             {lastResult.cards.map((card, i) => (
               <CardResultItem key={i} card={card} />
             ))}
-          </div>
-          {/* Rarity summary */}
-          <div className="flex flex-wrap gap-2 pt-1 border-t border-game-border">
-            {(['mythic', 'legendary', 'epic', 'rare', 'common'] as Rarity[]).map(rarity => {
-              const count = lastResult.cards.filter(c => c.rarity === rarity).length;
-              if (count === 0) return null;
-              const style = RARITY_STYLES[rarity];
-              return (
-                <span key={rarity} className={`text-xs font-bold px-2 py-0.5 rounded-full border ${style.border} ${style.text}`}>
-                  {count}× {style.label}
-                </span>
-              );
-            })}
           </div>
         </div>
       )}
