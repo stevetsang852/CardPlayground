@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './card-effects.css';
-// Side-effect: attaches tilt + holo spring loop to all card elements via MutationObserver
+import './ptcg-card.css';
 import './card-tilt';
 
 const root = document.getElementById('root');
