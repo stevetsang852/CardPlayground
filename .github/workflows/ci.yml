@@ -27,9 +27,9 @@ jobs:
       - name: Test pack odds (shared)
         working-directory: shared
         run: npx jest src/drawing/ptcgOdds.test.ts src/drawing/ptcgPackOdds.test.ts --coverage=false --runInBand
-      - name: Test foil map (client)
+      - name: Test frontend draw and foil
         working-directory: client
-        run: npx jest src/game/foilMap.test.ts --coverage=false --runInBand
+        run: npx jest src/game --coverage=false --runInBand
       - name: Test local DB, auth, assets, catalog, redis, odds
         working-directory: backend
         env:
