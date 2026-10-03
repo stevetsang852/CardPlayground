@@ -1,144 +1,112 @@
-# Card Mystery Realm (卡片秘境)
+# CardPlayground
 
-A card collection game with gacha mechanics, synthesis systems, random events, and social features.
+Local card playground: JP-style 5-card packs, KADO public catalog, Redis cache, Docker debug stack.
 
-## Project Structure
+## Layout
 
 ```
-card-mystery-realm/
-├── backend/          # Backend server (Express + WebSocket)
-├── client/           # Client application (Vite + Three.js)
-├── shared/           # Shared type definitions
-└── .kiro/            # Kiro spec files
+backend/     Express + WS + local JSON DB
+client/       Vite + React + Three.js pack cinematic
+shared/       Draw odds + types
+database/     Redis Dockerfile
+.github/      ci.yml + catalog-sync.yml
 ```
 
-## Technology Stack
+## Quick start
 
-### Backend
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js
-- **WebSocket**: ws library
-- **Database**: Firebase Firestore
-- **Cache**: Redis
-- **Testing**: Jest + fast-check
-
-### Client
-- **Build Tool**: Vite
-- **3D Graphics**: Three.js
-- **Animation**: GSAP
-- **Auth**: Firebase Authentication
-- **Testing**: Jest + fast-check
-
-### Shared
-- **Language**: TypeScript
-- **Purpose**: Shared type definitions and utilities
-
-## Setup
-
-### Prerequisites
-- Node.js 18+ 
-- Redis server
-- Firebase project with Firestore enabled
-
-### Installation
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm run install:all
-   ```
-
-3. Configure environment variables:
-   - Copy `backend/.env.example` to `backend/.env`
-   - Copy `client/.env.example` to `client/.env`
-   - Fill in your Firebase and Redis credentials
-
-4. Set up Firebase:
-   - Download your Firebase service account key
-   - Place it in `backend/serviceAccountKey.json`
-
-### Development
-
-Run backend server:
 ```bash
+npm install
+cp backend/.env.example backend/.env
 npm run dev:backend
-```
-
-Run client development server:
-```bash
 npm run dev:client
 ```
 
-### Testing
-
-Run all tests:
-```bash
-npm test
+```text
+DATABASE_DRIVER=local
+LOCAL_DB_PATH=./data/local-db.json
+DEBUG_AUTH_BYPASS=true
+DEBUG_PLAYER_ID=debug-player
+KADO_SYNC_ON_START=true
+KADO_SYNC_MAX_SETS=3
+REDIS_URL=redis://127.0.0.1:6379
 ```
 
-Run tests for specific workspace:
+Docker:
+
 ```bash
-npm test -w backend
-npm test -w client
-npm test -w shared
+docker compose up --build
+# http://localhost:5173  API http://localhost:3000
 ```
 
-### Building
+## Card catalog (KADO / official HK)
 
-Build all packages:
+Primary public pages (no `kado.hk/api/`):
+
+- https://www.kado.hk/database
+- https://www.kado.hk/database/tw
+- fallback https://asia.pokemon-card.com/hk/card-search/
+
+On boot the backend:
+
+1. `syncKadoCatalog()` — up to `KADO_SYNC_MAX_SETS` sets, delay + timeout
+2. `seedCardPool()` — writes snapshot cards (M6a 30th CELEBRATION) into `cardTemplates`
+
+Check what loaded:
+
 ```bash
-npm run build
+curl -H 'Authorization: Bearer dev' http://localhost:3000/api/v1/catalog/status
+curl -H 'Authorization: Bearer dev' http://localhost:3000/api/v1/catalog/cards
+curl -X POST -H 'Authorization: Bearer dev' -H 'content-type: application/json' \
+  -d '{"force":true}' http://localhost:3000/api/v1/catalog/sync
 ```
 
-## Architecture
+Manual refresh:
 
-### Backend Services
-- **Card Drawing Service**: Manages pack purchases and card generation
-- **Card Synthesis Service**: Handles card combination and upgrades
-- **Random Event Service**: Triggers and manages special events
-- **Social Service**: Manages galleries, likes, comments, and leaderboards
-- **Trading Market Service**: Handles card trading and market dynamics
-- **Achievement Service**: Tracks and rewards player accomplishments
-- **Season Service**: Manages seasonal content and battle pass
+```bash
+npm run sync:catalog
+```
 
-### API Endpoints
-- REST API: `http://localhost:3000/api/v1`
-- WebSocket: `ws://localhost:3000/ws`
+Writes `backend/data/catalog-snapshot.json` + `local-db.json`.
 
-### Database Collections
-- `players`: Player profiles and state
-- `cards`: Card instances
-- `card_templates`: Card definitions
-- `pack_configurations`: Pack types and probabilities
-- `galleries`: Player card displays
-- `market_listings`: Active market listings
-- `achievements`: Achievement definitions
-- `seasons`: Season configurations
-- `active_events`: Currently active events
-- `missions`: Daily and weekly missions
+### GitHub Action: daily download
 
-## Features
+`.github/workflows/catalog-sync.yml`
 
-### Core Systems
-- **Gacha System**: Multiple pack types with configurable probabilities
-- **Pity System**: Guaranteed drops after unsuccessful attempts
-- **Luck Value**: Hidden mechanic that increases drop rates
-- **Card Synthesis**: Combine cards with varying success rates
-- **Random Events**: Mysterious Merchant, Card Storm, Lucky Moment, Copy Miracle
-- **Social Features**: Galleries, likes, comments, leaderboards
-- **Trading Market**: Player-to-player card trading with dynamic pricing
-- **Achievements**: Collection, rarity, social, and secret achievements
-- **Seasons**: Time-limited content with battle pass progression
-- **Daily Missions**: Engagement mechanics with rewards
+- cron `0 0 * * *` UTC (08:00 HKT) **only runs after this file is on `main`**
+- `workflow_dispatch` for a manual run
+- max 3 sets, polite delay, does not call `kado.hk/api/`
+- live fetch failure does **not** fail the whole repo CI (`continue-on-error`)
+- uploads artifact `catalog-snapshot`
+- commits `backend/data/catalog-snapshot.json` if under 1.5 MB
 
-### Technical Features
-- **Server Authority**: All game logic validated server-side
-- **Deterministic RNG**: Synchronized random generation
-- **Real-time Updates**: WebSocket-based live updates
-- **Caching**: Redis caching for performance
-- **Error Recovery**: Automatic retry and refund mechanisms
-- **Property-Based Testing**: Comprehensive test coverage
+Trigger now: Actions → catalog-sync → Run workflow.
+
+## Pack odds
+
+JP SV model: 5 cards = 3C + 1U/R + hit slot (UR/SAR/SR/AR/RR/R).
+`GET /api/v1/cards/odds`  `POST /api/v1/cards/open-pack`
+
+## Auth
+
+`DEBUG_AUTH_BYPASS=true` uses `X-Player-Id` / `DEBUG_PLAYER_ID`.
+Otherwise `POST /api/v1/auth/login` then `Authorization: Bearer`.
+
+## Tests / CI
+
+```bash
+# pack odds
+npx jest --workspace=shared src/drawing/ptcgPackOdds.test.ts --coverage=false
+# frontend draw
+npx jest --workspace=client src/game --coverage=false
+# catalog parsers + snapshot
+npx jest --workspace=backend src/catalog --coverage=false
+```
+
+`.github/workflows/ci.yml`
+
+- `local-db` — Jest (odds, foil, local DB, auth, KADO parsers, snapshot)
+- `docker` — build database / backend / frontend images
 
 ## License
 
-Proprietary - All rights reserved
+Proprietary. Card names/set lists attributed to public KADO / TPC pages.

@@ -1,0 +1,29 @@
+/* Official Pokemon TCG card: 63mm x 88mm */
+:root {
+  --ptcg-ratio: 63 / 88;
+  --ptcg-radius: 10px;
+}
+
+.ptcg-card,
+.drawn-card,
+.inv-card,
+.cat-card,
+.detail-card {
+  aspect-ratio: var(--ptcg-ratio);
+  border-radius: var(--ptcg-radius);
+  overflow: hidden;
+}
+
+.ptcg-card-sm,
+.inv-card,
+.cat-card,
+.drawn-card {
+  width: 6.3rem;
+  height: auto;
+}
+
+.ptcg-card-lg,
+.detail-card {
+  width: 15.75rem;
+  height: auto;
+}
