@@ -10,8 +10,9 @@ import { InventoryPage } from './components/InventoryPage';
 import { ShopPage } from './components/ShopPage';
 import { AchievementsPage } from './components/AchievementsPage';
 import { SettingsPage } from './components/SettingsPage';
+import { BattlePage } from './components/battle/BattlePage';
 
-export type Page = 'home' | 'draw' | 'synthesis' | 'inventory' | 'shop' | 'achievements' | 'settings';
+export type Page = 'home' | 'draw' | 'synthesis' | 'inventory' | 'shop' | 'achievements' | 'settings' | 'battle';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -62,6 +63,7 @@ export default function App() {
       case 'shop':        return <ShopPage />;
       case 'achievements':return <AchievementsPage />;
       case 'settings':    return <SettingsPage />;
+      case 'battle':      return <BattlePage onBack={() => setCurrentPage('home')} />;
       default:            return <HomePage onNavigate={setCurrentPage} />;
     }
   };

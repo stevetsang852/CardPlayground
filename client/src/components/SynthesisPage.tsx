@@ -185,16 +185,18 @@ export function SynthesisPage() {
 
       lastRes = result;
       allResults.push(result);
+      // In skip-all mode, update results list in real-time as each batch finishes
+      if (skipAll) {
+        setBatchResults([...allResults]);
+        setShowResult(true);
+      }
     }
 
     setMultiBatchInfo(null);
     skipAllRef.current = false;
     skipCurrentAnimRef.current = null;
     setIsMultiRunning(false);
-    if (skipAll && allResults.length > 0) {
-      setBatchResults(allResults);
-      setShowResult(true);
-    } else if (lastRes) {
+    if (!skipAll && lastRes) {
       setLastResult(lastRes);
       setShowResult(true);
     }
@@ -438,8 +440,6 @@ export function SynthesisPage() {
         </button>
       </div>
 
-      {/* Skip All button — only visible during multi-auto */}
-
       {!canAfford && (
         <p className="text-red-400 text-xs text-center">
           Insufficient coins. Visit the Shop to get more currency.
@@ -451,9 +451,14 @@ export function SynthesisPage() {
         <div className="rounded-xl border border-purple-600 bg-purple-900/10 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-white text-base">
-              📋 Batch Results ({batchResults.length} runs)
+              📋 Batch Results
+              {isSynthesizing && multiBatchInfo
+                ? ` (${multiBatchInfo.current}/${multiBatchInfo.total})`
+                : ` (${batchResults.length} runs)`}
             </h3>
-            <button onClick={() => { setShowResult(false); setBatchResults([]); }} className="text-gray-500 hover:text-gray-300 text-sm">✕</button>
+            {!isSynthesizing && (
+              <button onClick={() => { setShowResult(false); setBatchResults([]); }} className="text-gray-500 hover:text-gray-300 text-sm">✕</button>
+            )}
           </div>
           <div className="text-xs text-gray-400 flex gap-4">
             <span className="text-green-400">✅ {batchResults.filter(r => r.success).length} succeeded</span>

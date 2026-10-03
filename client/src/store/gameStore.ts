@@ -204,28 +204,28 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ player: richPlayer });
     await dataService.saveSetting('playerState', JSON.stringify(richPlayer));
 
-    // Add cards covering all rarities
+    // Add cards covering all rarities — rarity must be set explicitly
     const now = Date.now();
     const batch: ICardInstance[] = [
       // 5× each of commons 1–10
       ...[1,2,3,4,5,6,7,8,9,10].flatMap((id) =>
-        Array.from({ length: 5 }, (_, i) => ({ cardId: id, obtainedAt: now + i, isNew: false } as ICardInstance))
+        Array.from({ length: 5 }, (_, i) => ({ cardId: id, rarity: 'common', level: 1, obtainedAt: now + i } as ICardInstance))
       ),
       // 3× each of rares 121–130
       ...[121,122,123,124,125,126,127,128,129,130].flatMap((id) =>
-        Array.from({ length: 3 }, (_, i) => ({ cardId: id, obtainedAt: now + i, isNew: false } as ICardInstance))
+        Array.from({ length: 3 }, (_, i) => ({ cardId: id, rarity: 'rare', level: 1, obtainedAt: now + i } as ICardInstance))
       ),
       // 2× each of epics 171–183
       ...[171,172,173,174,175,176,177,178,179,180,181,182,183].flatMap((id) =>
-        Array.from({ length: 2 }, (_, i) => ({ cardId: id, obtainedAt: now + i, isNew: false } as ICardInstance))
+        Array.from({ length: 2 }, (_, i) => ({ cardId: id, rarity: 'epic', level: 1, obtainedAt: now + i } as ICardInstance))
       ),
       // 1× each legendary
       ...[196,197,198,199,200,201,202,203].map((id) =>
-        ({ cardId: id, obtainedAt: now, isNew: false } as ICardInstance)
+        ({ cardId: id, rarity: 'legendary', level: 1, obtainedAt: now } as ICardInstance)
       ),
       // 1× each mythic
       ...[204,205,206].map((id) =>
-        ({ cardId: id, obtainedAt: now, isNew: false } as ICardInstance)
+        ({ cardId: id, rarity: 'mythic', level: 1, obtainedAt: now } as ICardInstance)
       ),
     ];
     await get().addCards(batch);

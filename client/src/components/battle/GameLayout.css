@@ -1,0 +1,71 @@
+/* GameLayout.css — Three-zone battle layout */
+
+.game-layout {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #030712;
+}
+
+.enemy-path {
+  height: 35%;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.bottom-area {
+  height: 65%;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.player-board {
+  flex: 7;
+  position: relative;
+  overflow: hidden;
+}
+
+.control-panel {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: rgba(17, 24, 39, 0.95);
+  border-left: 1px solid rgba(75, 85, 99, 0.4);
+}
+
+/* Mobile breakpoint: stack board above controls */
+@media (max-width: 767px) {
+  .bottom-area {
+    flex-direction: column;
+  }
+
+  .player-board {
+    flex: none;
+    height: 60%;
+  }
+
+  .control-panel {
+    flex: none;
+    height: 40%;
+    border-left: none;
+    border-top: 1px solid rgba(75, 85, 99, 0.4);
+  }
+}
+
+/* Button touch targets — control panel buttons */
+.control-panel button {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+@media (max-width: 767px) {
+  .control-panel button {
+    min-width: 56px;
+    min-height: 56px;
+  }
+}

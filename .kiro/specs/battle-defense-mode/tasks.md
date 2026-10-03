@@ -1,0 +1,353 @@
+# 實作任務：秘境防御战模式（Battle Defense Mode）
+
+## 概覽
+
+純客戶端塔防模式，整合至現有《卡片秘境》單機架構。所有邏輯運行於瀏覽器，透過 IndexedDB 持久化，無需後端。
+
+## 任務
+
+- [x] 1. 核心型別與有限狀態機（Battle_FSM）
+  - [x] 1.1 建立 `client/src/game/battle/BattleTypes.ts`，定義所有核心型別：`Rarity`、`Element`、`SkillType`、`BattleMode`、`Guardian`、`Enemy`、`GridCell`、`BattleState`、`Wave`、`BossEnemy`、`BattleReward`、`SeriesBonus`、`Deck`、`ValidationResult`
+    - 依照設計文件中的型別定義實作，包含所有欄位與型別標注
+    - _需求：1.1, 2.1, 3.1–3.7, 10.1_
+  - [x] 1.2 建立 `client/src/game/battle/BattleFSM.ts`，實作有限狀態機
+    - 定義合法狀態：Idle、Preparing、Fighting、BetweenWaves、BossFight、Victory、Defeat
+    - 實作合法轉換表（依設計文件轉換表）
+    - 每次轉換觸發 `onExit(prevState)` 與 `onEnter(nextState)` 回調
+    - 非法轉換：`console.warn` 並忽略，不拋出例外
+    - _需求：10.1, 10.2, 10.3, 10.4_
+  - [x] 1.3 為 `BattleFSM` 加入序列化（`toJSON`）與反序列化（`fromJSON`）方法
+    - _需求：10.5, 10.6, 10.7_
+  - [x] 1.4 撰寫 `client/src/game/battle/BattleFSM.test.ts`
+    - 覆蓋：合法轉換、非法轉換被忽略、回調觸發
+    - _需求：10.2, 10.3, 10.4_
+  - [x] 1.5 撰寫 BattleFSM 屬性測試（property-based test）
+    - **屬性 1：非法轉換不改變狀態**
+    - **驗證：需求 10.3**
+    - **屬性 2：JSON 往返等價（serialize → deserialize 產生等價物件）**
+    - **驗證：需求 10.7**
+
+- [x] 2. 守衛屬性計算器（GuardianFactory）
+  - [x] 2.1 建立 `client/src/game/battle/GuardianFactory.ts`
+    - 依稀有度賦予基礎屬性（攻擊力、生命值、射程、攻速）及技能類型，依照設計文件屬性表
+    - common→single；rare→aoe/slow；epic→summon/sp_regen；legendary→special；mythic→ultimate（×1/場）
+    - _需求：3.1, 3.2, 3.3, 3.4, 3.5_
+  - [x] 2.2 實作等級加成計算：`attack(level) = baseAttack × (1 + 0.5 × (level - 1))`，生命值同公式
+    - _需求：4.4_
+  - [x] 2.3 實作系列元素屬性映射（原始火山→fire、寒冰紀元→ice、神秘森林→nature、光明聖域→light、暗影深淵→shadow）
+    - _需求：3.7, 8.4_
+  - [x] 2.4 撰寫 `client/src/game/battle/GuardianFactory.test.ts`
+    - 覆蓋：各稀有度屬性正確、等級加成公式、元素映射
+    - _需求：3.1–3.7, 4.4_
+  - [x] 2.5 撰寫 GuardianFactory 屬性測試
+    - **屬性 3：等級加成單調遞增（level N+1 屬性 > level N）**
+    - **驗證：需求 4.4**
+    - **屬性 4：所有稀有度的攻擊力與生命值 > 0**
+    - **驗證：需求 3.1–3.5**
+
+- [x] 3. 物件池（ObjectPool）
+  - [x] 3.1 建立 `client/src/game/battle/ObjectPool.ts`，實作泛型物件池
+    - 建構子接受 `factory: () => T` 與 `reset: (obj: T) => void`
+    - 實作 `acquire()`：從池取出或動態擴充
+    - 實作 `release(obj: T)`：歸還至池
+    - Enemy 池容量：單波最大敵人數 × 2；子彈池容量：Guardian 上限（20）× 3 = 60
+    - _需求：5.6, 11.1, 11.2, 11.3_
+  - [x] 3.2 撰寫 `client/src/game/battle/ObjectPool.test.ts`
+    - 覆蓋：預分配容量、動態擴充、acquire/release 往返
+    - _需求：11.1, 11.2, 11.3_
+  - [x] 3.3 撰寫 ObjectPool 屬性測試
+    - **屬性 5：acquire 後 release 不丟失物件（池大小不縮減）**
+    - **驗證：需求 11.3**
+    - **屬性 6：容量不足時動態擴充，不丟棄請求**
+    - **驗證：需求 11.3**
+
+- [x] 4. 套牌驗證（DeckValidator）
+  - [x] 4.1 建立 `client/src/game/battle/DeckValidator.ts`，實作 `validate(cardIds, collection): ValidationResult`
+    - 規則 1：長度 5–8，否則回傳對應錯誤訊息
+    - 規則 2：神話卡 ≤ 1 張，否則回傳「每場限帶 1 張神話卡」
+    - 規則 3：所有卡牌存在於收藏中
+    - 回傳 `{ valid: boolean, errors: string[] }`
+    - _需求：1.1, 1.2, 1.3, 1.4, 1.5_
+  - [x] 4.2 撰寫 `client/src/game/battle/DeckValidator.test.ts`
+    - 覆蓋：邊界值（4 張拒絕、5 張通過、8 張通過、9 張拒絕）、神話卡限制、錯誤訊息內容
+    - _需求：1.2, 1.3, 1.4, 1.5_
+  - [x] 4.3 撰寫 DeckValidator 屬性測試
+    - **屬性 7：5–8 張且 ≤1 神話 → valid=true；否則 errors 非空**
+    - **驗證：需求 1.1, 1.2, 1.3, 1.4**
+
+- [x] 5. 戰鬥核心邏輯（BattleEngine）
+  - [x] 5.1 建立 `client/src/game/battle/BattleEngine.ts`，實作遊戲迴圈 tick
+    - 移動所有 Enemy（speed × deltaTime）
+    - 檢查 Enemy 到達終點 → 扣玩家 HP，歸還物件池
+    - 批次處理 Guardian 攻擊判定（射程內最近 Enemy）
+    - 處理子彈命中 → 扣 Enemy HP，死亡給 SP
+    - 檢查波次結束條件 → 觸發 FSM 轉換
+    - _需求：5.1, 5.2, 5.3, 5.4, 5.5, 11.6_
+  - [x] 5.2 實作波次管理
+    - `enemyCount(wave) = baseCount + floor(wave × 1.5)`
+    - `enemyHp(wave) = baseHp × (1.1 ^ wave)`
+    - 第 5 的倍數波觸發 Boss 戰（FSM → BossFight）
+    - _需求：6.3, 6.4_
+  - [x] 5.3 實作 SP 系統
+    - 初始 SP = 10 + floor(galleryScore / 100) × 10（從 `gameStore` 讀取 `galleryScore`）
+    - 擊殺普通敵人：+1 SP；擊殺 Boss：+5 SP
+    - 召喚費用：common=2, rare=3, epic=5, legendary=8, mythic=15
+    - _需求：8.1, 2.5_
+  - [x] 5.4 實作 Series_Bonus 計算
+    - 計算 Deck 系列組成，≥3 張同系列激活 +10% 攻擊力加成
+    - 多個加成疊加計算
+    - _需求：8.2, 8.3, 8.4, 8.5_
+  - [x] 5.5 撰寫 `client/src/game/battle/BattleEngine.test.ts`
+    - 覆蓋：Enemy 行進與扣血、Guardian 攻擊判定、SP 獎勵、波次難度遞增、Series_Bonus 疊加
+    - _需求：5.1–5.5, 6.3, 8.3, 8.5_
+  - [x] 5.6 撰寫 BattleEngine 屬性測試
+    - **屬性 8：波數越高敵人數量與 HP 單調遞增**
+    - **驗證：需求 6.3**
+
+- [x] 6. 守衛合成升級（SynthesisUpgrade）
+  - [x] 6.1 在 `BattleEngine.ts` 中實作合成升級邏輯
+    - 偵測相鄰（上下左右）相同卡牌 ID 且相同等級的 Guardian
+    - 消耗兩個 Guardian 及 SP，生成等級 +1 的同種 Guardian
+    - _需求：4.1, 4.2_
+  - [x] 6.2 實作等級上限檢查：超過 5 級拒絕合成並提示「已達最高等級」
+    - _需求：4.3_
+  - [x] 6.3 撰寫合成升級測試
+    - 覆蓋：合成後等級正確、SP 消耗正確、最高等級限制
+    - _需求：4.2, 4.3_
+  - [x] 6.4 撰寫合成升級屬性測試
+    - **屬性 9：合成後等級 = 原等級 + 1，且不超過 5**
+    - **驗證：需求 4.2, 4.3**
+
+- [x] 7. 遊戲模式管理（GameModeManager）
+  - [x] 7.1 建立 `client/src/game/battle/GameModeManager.ts`，實作三種模式
+    - Daily_Challenge：每日一次、固定 20 波
+    - Endless_Mode：無限波次，HP 歸零結束，里程碑 10/25/50/100 波
+    - Boss_Rush：僅生成 Boss，無普通敵人
+    - _需求：7.1, 7.3, 7.4_
+  - [x] 7.2 實作 Daily_Challenge 每日限玩邏輯
+    - localStorage key：`battle_daily_{YYYY-MM-DD}`
+    - 完成後寫入時間戳；同日再進入計算剩餘重置時間（隔日 00:00 重置）
+    - _需求：7.2, 7.5_
+  - [x] 7.3 撰寫 `client/src/game/battle/GameModeManager.test.ts`
+    - 覆蓋：每日限玩邏輯、模式切換、重置時間計算
+    - _需求：7.2, 7.5_
+  - [x] 7.4 撰寫 GameModeManager 屬性測試
+    - **屬性 10：同日第二次進入 Daily_Challenge 必定被拒絕且回傳剩餘時間 > 0**
+    - **驗證：需求 7.2**
+
+- [x] 8. 戰鬥獎勵系統（RewardCalculator）
+  - [x] 8.1 建立 `client/src/game/battle/RewardCalculator.ts`，實作獎勵計算
+    - 任意模式：金幣 = wave × 10
+    - Daily_Challenge 勝利：+1 抽卡券
+    - Endless 里程碑（10/25/50/100 波）：稀有材料 ×1
+    - Boss 擊殺即時：金幣 50 或抽卡券 ×1（隨機）
+    - _需求：9.1, 9.2, 9.3, 9.4_
+  - [x] 8.2 實作獎勵寫入 `gameStore.softCurrency` 並透過 `dataService.saveGameState()` 持久化
+    - _需求：9.5_
+  - [x] 8.3 撰寫 `client/src/game/battle/RewardCalculator.test.ts`
+    - 覆蓋：各模式獎勵計算、里程碑觸發、Boss 獎勵即時性
+    - _需求：9.1–9.4_
+  - [x] 8.4 撰寫 RewardCalculator 屬性測試
+    - **屬性 11：波數越高金幣獎勵越多（單調遞增）**
+    - **驗證：需求 9.1**
+
+- [x] 9. 戰鬥狀態序列化（BattleSerializer）
+  - [x] 9.1 建立 `client/src/game/battle/BattleSerializer.ts`
+    - `serialize(state: BattleState): string` → JSON 字串
+    - `deserialize(json: string): BattleState | Error` → 格式錯誤回傳 Error，不拋出例外
+    - `prettyPrint(state: BattleState): string` → `JSON.stringify(state, null, 2)`
+    - _需求：12.1, 12.2, 12.3, 12.6_
+  - [x] 9.2 實作缺少必要欄位時列出所有缺少欄位的錯誤訊息
+    - _需求：12.4_
+  - [x] 9.3 撰寫 `client/src/game/battle/BattleSerializer.test.ts`
+    - 覆蓋：格式錯誤處理、缺少欄位列舉、prettyPrint 格式
+    - _需求：12.3, 12.4, 12.6_
+  - [x] 9.4 撰寫 BattleSerializer 屬性測試
+    - **屬性 12：往返屬性（deserialize(serialize(s)) 等價於 s）**
+    - **驗證：需求 12.5**
+    - **屬性 13：格式錯誤輸入回傳 Error 而非拋出例外**
+    - **驗證：需求 12.3**
+
+- [x] 10. 效能管理（PerformanceManager）
+  - [x] 10.1 建立 `client/src/game/battle/PerformanceManager.ts`
+    - `isMobile(): boolean` → 螢幕寬度 < 768px || `/Mobi/i.test(navigator.userAgent)`
+    - `getParticleLimit(): number` → mobile: 50, desktop: 100
+    - `getGuardianLimit(): number` → 固定 20
+    - _需求：11.4, 11.5_
+  - [x] 10.2 實作 Object_Pool 容量驗證
+    - Enemy 池 ≥ 單波最大數 × 2；子彈池 ≥ Guardian 上限 × 3
+    - _需求：11.1, 11.2_
+
+- [x] 11. 檢查點 — 確保所有測試通過
+  - 執行 `client` 目錄下所有 battle 相關測試，確認通過後再繼續
+  - 如有問題請向使用者確認
+
+- [x] 12. 戰鬥 UI 元件（BattlePage）
+  - [x] 12.1 建立 `client/src/components/battle/DeckSelectPage.tsx`
+    - 顯示玩家收藏（複用 `GalleryGrid` 樣式）
+    - 點擊卡牌加入/移除套牌，即時顯示 `DeckValidator` 驗證錯誤
+    - 顯示每張卡牌的守衛屬性預覽（攻擊力、射程、技能）
+    - 顯示 Gallery_Score 初始 SP 加成預覽
+    - _需求：1.1–1.7_
+  - [x] 12.2 建立 `client/src/components/battle/BattleGrid.tsx`
+    - CSS Grid 渲染 3×5 或 3×8 格子
+    - 每格顯示守衛圖示、等級徽章、HP 百分比條
+    - 點擊空格：手動召喚（消耗 SP）
+    - 點擊相鄰同種守衛：顯示合成提示 Modal（含 SP 費用與升級後屬性預覽）
+    - _需求：2.1–2.7, 4.1, 4.6_
+  - [x] 12.3 建立 `client/src/components/battle/BattleHUD.tsx`
+    - 頂部：❤️ HP | ⚡ SP | 🌊 Wave N | ⏱ 倒數（10 秒）
+    - 底部：激活的 Series_Bonus 標籤列表
+    - 神話大招按鈕（已使用時 `disabled` + 「本場已使用」提示）
+    - _需求：3.6, 6.1, 8.6_
+  - [x] 12.4 建立 `client/src/components/battle/BattleResultScreen.tsx`
+    - 勝利/失敗標題
+    - 本場獎勵明細列表
+    - 最高波數紀錄（與本場對比）
+    - 「再來一場」/ 「返回主頁」按鈕5
+    - _需求：9.6, 7.6_
+  - [x] 12.5 建立 `client/src/components/battle/BattlePage.tsx`
+    - 整合 DeckSelectPage、BattleGrid、BattleHUD、BattleResultScreen
+    - 連接 `BattleEngine` 與 `BattleFSM`
+    - 管理遊戲迴圈（`requestAnimationFrame`），throttle 至 60fps
+    - _需求：5.1–5.6, 6.1–6.7, 10.1_
+
+- [x] 13. 整合至主應用程式
+  - [x] 13.1 在 `client/src/App.tsx` 的 `Page` 型別加入 `'battle'`，在 `renderPage` 加入對應路由
+  - [x] 13.2 在 `client/src/components/Layout.tsx` 導覽列加入「⚔️ 防御战」入口
+  - [x] 13.3 在 `client/src/components/HomePage.tsx` 加入防御战模式的快捷入口卡片
+  - [x] 13.4 在 `client/src/animations/index.ts` 匯出合成升級粒子特效（複用現有 `SynthesisEffect` 或新增輕量版）
+    - _需求：4.5_
+
+- [x] 14. 最終檢查點 — 確保所有測試通過
+  - 執行全部測試，確認通過後完成實作
+  - 如有問題請向使用者確認
+
+## 備註
+
+- 標記 `*` 的子任務為選填，可跳過以加速 MVP 開發
+- 每個任務均標注對應需求編號以利追蹤
+- 屬性測試驗證普遍正確性，單元測試驗證具體範例與邊界條件
+- 檢查點確保增量驗證，避免問題累積
+
+- [x] 15. 隨機召喚服務（RandomSummonService）
+  - [x] 15.1 建立 `client/src/game/battle/RandomSummonService.ts`
+    - 實作 `randomSummon(deck, grid, sp, cost): SummonResult | null`：從 Deck 隨機抽卡，從空格隨機選位置，SP 不足或無空格時回傳 null
+    - 實作 `randomSynthesis(g1, g2, deck, synthesisLuckChance?): Guardian`：合成後從 Deck 隨機抽取種類（含合成幸運邏輯），等級 = 原等級 + 1
+    - 私有方法：`getEmptyCells(grid): {x,y}[]`、`pickRandom<T>(arr): T`
+    - _需求：13.1, 13.2, 13.3, 14.1, 14.2, 14.3_
+  - [x] 15.2 `BattleEngine.ts` 已實作 `buyRandomGuardian(rarity)`：從 Deck 隨機抽卡、隨機空格放置（Random Dice 核心機制）
+    - _需求：13.1, 13.2_
+  - [x] 15.3 `BattleEngine.ts` 的 `synthesize()` 已實作隨機合成：合成後從 Deck 隨機抽取新種類
+    - _需求：14.1, 14.2_
+  - [x] 15.4 撰寫 `RandomSummonService.test.ts`：覆蓋空格為空時返回 null、SP 不足返回 null、召喚種類在 Deck 範圍內、合成等級 +1
+    - _需求：13.3, 14.1, 14.5_
+  - [x] 15.5 撰寫 `RandomSummonService.property.test.ts`
+    - **屬性 14：隨機召喚結果種類始終在 Deck 範圍內**
+    - **驗證：需求 13.1, 13.2**
+    - **屬性 15：合成結果等級 = 原等級 + 1，種類在 Deck 範圍內**
+    - **驗證：需求 14.1, 14.2**
+
+- [x] 16. 全圖攻擊（GuardianFactory + BattleEngine 更新）
+  - [x] 16.1 更新 `GuardianFactory.ts`：新增 `isAttackType(skillType): boolean`；攻擊型（single/aoe/special/ultimate）在 `createGuardian` 中將 `range` 設為 `Infinity`
+    - _需求：15.1, 15.2, 15.4_
+  - [x] 16.2 更新 `BattleEngine.ts` 的 `_findNearestEnemyInRange`：攻擊型守衛（`range === Infinity`）優先選 `gridX` 最大的敵人（最接近終點），輔助型保留距離判斷
+    - _需求：15.1, 15.2, 15.3_
+  - [x] 16.3 更新 `GuardianFactory.test.ts`：新增攻擊型守衛 range 為 Infinity 的測試
+    - _需求：15.1, 15.4_
+  - [x] 16.4 在現有 `GuardianFactory.property.test.ts` 中新增全圖攻擊屬性測試
+    - **屬性 16：攻擊型守衛始終能攻擊到任意位置的敵人（range = Infinity）**
+    - **驗證：需求 15.1**
+
+- [x] 17. 天賦系統（TalentSystem）
+  - [x] 17.1 更新 `BattleTypes.ts`：新增 `TalentType`（`'sp_bonus' | 'attack_speed' | 'first_wave_reduction' | 'synthesis_luck' | 'coin_harvest'`）、`Talent` 介面；`BattleState` 新增 `activeTalent?: Talent`、`coins: number`、`synthesisLuckChance?: number`、`coinHarvestBonus?: number`
+    - _需求：17.3, 17.4, 16.1_
+  - [x] 17.2 建立 `client/src/game/battle/TalentSystem.ts`
+    - 定義 `TALENT_POOL: Talent[]`（5 種天賦，各含 `type`、`name`、`description`、`effect` 數值）
+    - 實作 `drawTalents(count): Talent[]`：從 TALENT_POOL 隨機抽取不重複天賦
+    - 實作 `applyTalent(talent, state): BattleState`：依 type 修改 state（sp_bonus: +20 SP、attack_speed: 攻速 ×1.2、first_wave_reduction: 第一波敵人 HP ×0.5、synthesis_luck: synthesisLuckChance=0.3、coin_harvest: coinHarvestBonus=+10）
+    - _需求：17.1, 17.3, 17.4, 17.5_
+  - [x] 17.3 撰寫 `TalentSystem.test.ts`：覆蓋天賦抽取不重複、`applyTalent` 各類型效果正確
+    - _需求：17.4, 17.7_
+  - [x] 17.4 撰寫 `TalentSystem.property.test.ts`
+    - **屬性 17：抽取的 N 個天賦互不重複（N ≤ TALENT_POOL.length）**
+    - **驗證：需求 17.7**
+
+- [x] 18. 雙軌成長系統（BattleEngine + UI 更新）
+  - [x] 18.1 在 `BattleEngine.ts` 中實作 `coinUpgrade(gridX, gridY): { success: boolean; message?: string }`
+    - 費用表：1→2: 50金幣、2→3: 100金幣、3→4: 200金幣、4→5: 400金幣
+    - 金幣不足或等級已滿時回傳 `{ success: false, message }`
+    - _需求：16.1, 16.2, 16.3_
+  - [x] 18.2 更新 `BattleEngine.ts`：在 `BetweenWaves` 轉換時發放金幣（`state.wave × 5 + (state.coinHarvestBonus ?? 0)`），累加至 `state.coins`
+    - _需求：16.1_
+  - [x] 18.3 更新 `BattleGrid.tsx`：格子點擊後顯示操作 Modal，提供「💰 穩定升級（消耗金幣）」和「⚗️ 隨機合成（零成本）」兩個選項；升級選項顯示金幣費用與升級後屬性預覽
+    - _需求：16.4, 16.5_
+  - [x] 18.4 更新 `BattleHUD.tsx`：頂部 SP 旁新增 💰 金幣數量顯示
+    - _需求：16.1_
+
+- [x] 19. 天賦選擇 UI + HUD 更新
+  - [x] 19.1 在 `DeckSelectPage.tsx` 中，套牌確認後插入天賦選擇步驟：展示 3 張隨機天賦卡（含名稱、描述、效果），玩家必選 1 個後才能開始戰鬥
+    - _需求：17.1, 17.2_
+  - [x] 19.2 更新 `BattleHUD.tsx`：底部 Series Bonus 列表旁新增當前天賦名稱與效果標籤
+    - _需求：17.6_
+  - [x] 19.3 更新 `BattlePage.tsx`：`Phase` 新增 `'talent-select'`；整合 `TalentSystem`，管理 `deck-select` → `talent-select` → `battle` 狀態流程；將選定天賦透過 `applyTalent` 套用至初始 `BattleState`
+    - _需求：17.2, 17.3_
+
+- [-] 20. GameLayout 三區布局（Three.js + React 混合架構）
+  - [x] 20.1 建立 `client/src/components/battle/GameLayout.tsx`，實作 flex column 布局
+    - `.game-layout`：`width: 100vw; height: 100vh; display: flex; flex-direction: column`
+    - `.enemy-path`：`height: 35%`（EnemyPathScene 掛載容器）
+    - `.bottom-area`：`height: 65%; display: flex`
+    - `.player-board`：`flex: 7`（PlayerBoardScene 掛載容器）
+    - `.control-panel`：`flex: 3`（ControlPanel React UI 容器）
+    - _需求：18.1, 18.2, 18.3_
+  - [x] 20.2 建立 `client/src/components/battle/EnemyPathScene.tsx`，實作獨立 Three.js 場景
+    - 建立獨立 `WebGLRenderer`，掛載至 `.enemy-path` 容器（`renderer.setSize(containerWidth, containerHeight)`）
+    - 以 `CatmullRomCurve3` 定義路徑控制點，用 `TubeGeometry` 或 `Line` 渲染可見路徑 mesh
+    - 敵人模型沿曲線移動：`curve.getPoint(pathProgress)` 插值（`pathProgress ∈ [0, 1]`）
+    - 粒子特效（`Points` + `BufferGeometry`），移動端限制至桌面版 50%
+    - `useEffect` 清理時呼叫 `renderer.dispose()`
+    - _需求：5.1, 5.2, 18.3_
+  - [x] 20.3 建立 `client/src/components/battle/PlayerBoardScene.tsx`，實作獨立 Three.js 場景
+    - 建立獨立 `WebGLRenderer`，掛載至 `.player-board` 容器
+    - 5×3 Grid：每格以 `PlaneGeometry(cellSize, cellSize)` 建立（`cellSize=1`，`gap=0.1`）
+    - 格子世界座標：`x = col × (cellSize + gap)`，`y = row × (cellSize + gap)`
+    - 守衛單位以對應稀有度的 Sprite 或 3D 模型渲染於格子上
+    - 點擊事件透過 `Raycaster` 偵測格子，回調 `onCellClick(x, y)`
+    - `useEffect` 清理時呼叫 `renderer.dispose()`
+    - _需求：2.1, 2.2, 18.3_
+  - [-] 20.4 更新 `client/src/components/battle/BattlePage.tsx`，整合混合架構
+    - 引入 `GameLayout`，將 `EnemyPathScene`、`PlayerBoardScene`、`ControlPanel`（React HTML UI）分別掛載至對應容器
+    - 管理兩個 renderer 的 resize（監聽容器尺寸變化後呼叫 `renderer.setSize`）
+    - 管理兩個 renderer 的 dispose（元件 unmount 時清理）
+    - `ControlPanel` 區域渲染召喚按鈕（⚡N SP）、HUD 數值、Series_Bonus 標籤
+    - _需求：18.1, 18.2, 18.5, 18.7_
+  - [ ] 20.5 撰寫 Property 12 屬性測試
+    - **Property 12：EnemyPath 容器高度 = 35% ±5% 總視口高度，PlayerBoardScene 寬度 > ControlPanel 寬度**
+    - **驗證：需求 18.2, 18.3**
+
+- [ ] 21. 響應式布局與按鈕規格
+  - [ ] 21.1 在 `GameLayout.tsx` CSS 中加入移動端斷點（`@media (max-width: 767px)`）
+    - `.bottom-area`：`flex-direction: column`
+    - `.player-board`：`flex: none; height: 60%`
+    - `.control-panel`：`flex: none; height: 40%`
+    - _需求：19.1, 19.2_
+  - [ ] 21.2 實作 resize 監聽，觸發兩個 Three.js renderer 的 `setSize` 重算
+    - 在 `EnemyPathScene` 與 `PlayerBoardScene` 中各自使用 `ResizeObserver` 監聽容器尺寸變化
+    - 容器尺寸改變時呼叫 `renderer.setSize(newWidth, newHeight)` 並更新 camera aspect ratio
+    - _需求：19.5_
+  - [ ] 21.3 確保 `ControlPanel` 所有可交互按鈕符合最小觸控規格
+    - 桌面端（≥ 768px）：`min-width: 48px; min-height: 48px; gap: 8px`
+    - 移動端（< 768px）：`min-width: 56px; min-height: 56px; gap: 8px`
+    - 適用範圍：召喚、合成、升級、確認、取消等所有按鈕
+    - _需求：19.3, 19.4_
+  - [ ] 21.4 撰寫 Property 13 屬性測試
+    - **Property 13：敵人 `pathProgress ∈ [0, 1]` 時，`CatmullRomCurve3.getPoint(pathProgress)` 計算的世界座標在 EnemyPathScene 場景邊界內，不溢出視口**
+    - **驗證：需求 5.1, 5.2, 18.3**
+  - [ ] 21.5 撰寫 Property 14 屬性測試
+    - **Property 14：viewport < 768px 時 `.bottom-area` flex-direction 為 `column`，所有可交互按鈕觸控區域 ≥ 44×44px（桌面 ≥ 48×48px，移動端 ≥ 56×56px）**
+    - **驗證：需求 19.3, 19.4**
+
+- [ ] 22. 最終檢查點 — 確保所有測試通過
+  - 執行全部 battle 相關測試，確認通過後完成實作
+  - 如有問題請向使用者確認

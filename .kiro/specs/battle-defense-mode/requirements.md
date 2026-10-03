@@ -9,8 +9,9 @@
 - **Battle_Defense_System**：管理整個秘境防御战模式的核心系統
 - **Battle_FSM**：以有限狀態機管理戰鬥流程的子系統（狀態：準備、戰鬥中、波次間、Boss戰、勝利、失敗）
 - **Guardian**：卡牌在戰場上的化身，擁有攻擊力、攻擊速度、射程、特殊技能等屬性
-- **Grid**：戰場網格，尺寸為 3×5 或 3×8，守衛與敵人在此互動
-- **Enemy**：從網格左側向右側行進的怪物單位，到達終點扣除玩家生命值
+- **Grid**：戰場網格，尺寸為 3×5（標準模式）或 3×8（擴展模式），守衛部署於此
+- **Enemy_Path**：怪物行走路徑，位於棋盤正上方的獨立區域，與 Grid 分離，敵人從左側進入沿固定路線向右行進
+- **Enemy**：沿 Enemy_Path 從左側向右側行進的怪物單位，到達終點扣除玩家生命值
 - **Wave**：一輪敵人進攻，每波結束後進入波次間準備階段
 - **Boss**：每第 5 波出現的強化敵人，擊敗後給予額外獎勵
 - **SP**：戰鬥資源點數（Skill Points），擊殺敵人獲得，用於召喚新守衛
@@ -22,6 +23,12 @@
 - **Daily_Challenge**：每日一次、固定波數的挑戰模式
 - **Endless_Mode**：無限波數的挑戰模式
 - **Boss_Rush**：連續 Boss 戰的特殊模式
+- **Random_Summon**：召喚時種類從 Deck 隨機抽取、位置隨機分配的召喚機制
+- **Random_Synthesis**：合成後生成隨機種類高等級守衛的機制（Random Dice 核心差異點）
+- **Global_Attack**：攻擊型守衛無射程限制、可攻擊全圖任意敵人的攻擊模式
+- **Dual_Growth**：同時提供穩定金幣升級與高風險隨機合成兩條成長路徑的系統
+- **Talent**：戰鬥開始前從隨機池中選擇的一次性增益效果，每局唯一
+- **Talent_Pool**：所有可用天賦的集合，每場戰鬥從中隨機抽取 3 個供玩家選擇
 
 ## 需求列表
 
@@ -45,13 +52,12 @@
 
 #### 驗收標準
 
-1. THE Battle_Defense_System SHALL 提供 3×5 或 3×8 的 Grid 作為戰場，格子數量依遊戲模式而定
-2. WHEN 一回合開始時，THE Battle_Defense_System SHALL 從 Deck 中隨機抽取一張卡牌並嘗試將對應 Guardian 放置於 Grid 的隨機空格
-3. IF Grid 中無空格可用，THEN THE Battle_Defense_System SHALL 跳過本回合的守衛召喚並通知玩家「戰場已滿」
+1. THE Battle_Defense_System SHALL 提供 3×5（標準模式）或 3×8（擴展模式）的 Grid 作為戰場，格子數量依遊戲模式而定
+2. WHEN 玩家點擊召喚按鈕並消耗足夠 SP 時，THE Battle_Defense_System SHALL 從 Deck 中隨機抽取一張卡牌並將對應 Guardian 放置於 Grid 的隨機空格（Random_Summon 機制）
+3. IF Grid 中無空格可用，THEN THE Battle_Defense_System SHALL 拒絕召喚並通知玩家「戰場已滿，無法召喚」
 4. THE Battle_Defense_System SHALL 限制同時存在於 Grid 上的 Guardian 總數不超過 20 個
-5. WHEN 玩家消耗 SP 手動召喚守衛時，THE Battle_Defense_System SHALL 將守衛放置於玩家指定的空格
-6. IF 玩家指定的格子已有守衛，THEN THE Battle_Defense_System SHALL 拒絕該操作並提示「該格子已被佔用」
-7. THE Battle_Defense_System SHALL 在每個 Grid 格子上顯示守衛的等級與當前生命值百分比
+5. IF 玩家 SP 不足以支付召喚費用，THEN THE Battle_Defense_System SHALL 禁用召喚按鈕並顯示當前 SP 與所需費用
+6. THE Battle_Defense_System SHALL 在每個 Grid 格子上顯示守衛的等級與當前生命值百分比
 
 ### 需求 3：守衛屬性與稀有度能力
 
@@ -86,13 +92,14 @@
 
 #### 驗收標準
 
-1. THE Battle_Defense_System SHALL 使 Enemy 從 Grid 最左列向最右列逐格行進
-2. WHEN Enemy 到達 Grid 最右列終點時，THE Battle_Defense_System SHALL 扣除玩家 1 點生命值並移除該 Enemy
-3. WHEN 玩家生命值降至 0 時，THE Battle_Defense_System SHALL 觸發 Battle_FSM 進入失敗狀態並結束戰鬥
-4. WHILE Guardian 的射程內有 Enemy 時，THE Battle_Defense_System SHALL 使 Guardian 自動攻擊射程內最近的 Enemy
-5. WHEN Enemy 生命值降至 0 時，THE Battle_Defense_System SHALL 移除該 Enemy 並給予玩家對應 SP 獎勵
-6. THE Battle_Defense_System SHALL 使用 Object_Pool 管理 Enemy 與子彈物件，避免每波次重新分配記憶體
-7. WHEN 移動端裝置偵測到效能不足時，THE Battle_Defense_System SHALL 自動降低粒子特效數量至標準值的 50%
+1. THE Battle_Defense_System SHALL 在棋盤正上方渲染獨立的 Enemy_Path 區域，Enemy 沿此路徑從左側進入向右側行進，不在 Grid 格子內移動
+2. THE Battle_Defense_System SHALL 使 Enemy_Path 與 Grid 視覺上明確分離，玩家可清楚區分怪物通道與守衛部署區域
+3. WHEN Enemy 到達 Enemy_Path 終點時，THE Battle_Defense_System SHALL 扣除玩家 1 點生命值並移除該 Enemy
+4. WHEN 玩家生命值降至 0 時，THE Battle_Defense_System SHALL 觸發 Battle_FSM 進入失敗狀態並結束戰鬥
+5. WHILE 戰鬥進行中，THE Battle_Defense_System SHALL 使 Guardian 自動攻擊 Enemy_Path 上的 Enemy（依需求 15 的全圖攻擊規則）
+6. WHEN Enemy 生命值降至 0 時，THE Battle_Defense_System SHALL 移除該 Enemy 並給予玩家對應 SP 獎勵
+7. THE Battle_Defense_System SHALL 使用 Object_Pool 管理 Enemy 與子彈物件，避免每波次重新分配記憶體
+8. WHEN 移動端裝置偵測到效能不足時，THE Battle_Defense_System SHALL 自動降低粒子特效數量至標準值的 50%
 
 ### 需求 6：波次管理與 Boss 戰
 
@@ -186,3 +193,97 @@
 4. WHEN 提供缺少必要欄位的 JSON 物件時，THE Battle_Defense_System SHALL 回傳列出所有缺少欄位的錯誤訊息
 5. FOR ALL 合法的戰鬥狀態物件，序列化後再解析 SHALL 產生等價的戰鬥狀態物件（往返屬性）
 6. THE Battle_Defense_System SHALL 提供格式化輸出方法，將戰鬥狀態物件輸出為人類可讀的 JSON 格式（含縮排）
+
+### 需求 13：召喚隨機性（Random Dice 核心機制）
+
+**用戶故事：** 身為玩家，我希望召喚守衛時種類與位置都帶有隨機性，以便每局體驗不同的戰術挑戰。
+
+#### 驗收標準
+
+1. WHEN 玩家消耗 SP 觸發召喚時，THE Battle_Defense_System SHALL 從當前 Deck 中隨機抽取一張卡牌決定守衛種類，而非由玩家指定
+2. WHEN 守衛種類確定後，THE Battle_Defense_System SHALL 從 Grid 中所有空格隨機選取一格作為部署位置，而非由玩家指定
+3. IF Grid 中無空格可用，THEN THE Battle_Defense_System SHALL 拒絕召喚並提示「戰場已滿，無法召喚」
+4. THE Battle_Defense_System SHALL 在召喚前顯示「召喚費用」與「將從 Deck 隨機抽取」的提示，讓玩家知悉隨機機制
+5. WHEN 召喚完成後，THE Battle_Defense_System SHALL 顯示本次召喚到的守衛種類與部署位置的動畫提示
+
+### 需求 14：合成隨機換種類（Random Dice 最核心差異點）
+
+**用戶故事：** 身為玩家，我希望合成守衛後獲得隨機種類的高等級守衛，以便體驗高風險高收益的策略決策。
+
+#### 驗收標準
+
+1. WHEN 玩家確認合成兩個相同等級的 Guardian 時，THE Battle_Defense_System SHALL 消耗兩個 Guardian，在其中一個格子生成等級加 1 的「隨機種類」Guardian，而非同種升級
+2. THE Battle_Defense_System SHALL 從玩家當前 Deck 中隨機抽取一張卡牌決定合成後的守衛種類
+3. WHEN 合成結果種類與原守衛相同時，THE Battle_Defense_System SHALL 仍視為合法結果，不重新抽取
+4. THE Battle_Defense_System SHALL 在合成提示中明確標示「合成後種類隨機」，讓玩家知悉風險
+5. IF 合成後等級超過 5 級，THEN THE Battle_Defense_System SHALL 拒絕合成並提示「已達最高等級」
+6. WHEN 合成成功時，THE Battle_Defense_System SHALL 顯示合成結果的守衛種類與升級動畫
+
+### 需求 15：全圖攻擊（降低上手門檻）
+
+**用戶故事：** 身為玩家，我希望戰鬥守衛能自動攻擊全圖範圍內的敵人，以便專注於守衛強度策略而非站位管理。
+
+#### 驗收標準
+
+1. WHILE 戰鬥進行中，THE Battle_Defense_System SHALL 使所有攻擊型 Guardian（skillType 為 single、aoe、special、ultimate）自動攻擊 Grid 上任意位置的 Enemy，不受射程格數限制
+2. WHILE 戰鬥進行中，THE Battle_Defense_System SHALL 使輔助型 Guardian（skillType 為 slow、summon、sp_regen）保留原有的範圍設定，僅對射程內目標生效
+3. WHEN 攻擊型 Guardian 選擇攻擊目標時，THE Battle_Defense_System SHALL 優先攻擊距離終點最近（gridX 最大）的 Enemy
+4. THE Battle_Defense_System SHALL 在守衛屬性預覽中標示「全圖攻擊」或「範圍輔助」以區分兩類守衛的攻擊模式
+
+### 需求 16：雙軌成長系統
+
+**用戶故事：** 身為玩家，我希望同時擁有穩定升級與高風險合成兩種成長路徑，以便根據當前局勢選擇最適合的策略。
+
+#### 驗收標準
+
+1. THE Battle_Defense_System SHALL 提供穩定成長路徑：玩家消耗金幣直接升級指定 Guardian 的等級（每次 +1 級），結果確定且無隨機性
+2. WHEN 玩家選擇金幣升級時，THE Battle_Defense_System SHALL 依照等級顯示升級費用（level 1→2: 50金幣、2→3: 100金幣、3→4: 200金幣、4→5: 400金幣）
+3. IF 玩家金幣不足，THEN THE Battle_Defense_System SHALL 拒絕升級並提示「金幣不足，需要 N 金幣」
+4. THE Battle_Defense_System SHALL 提供高風險成長路徑：玩家合成兩個相同等級的 Guardian，零金幣成本但合成後種類隨機（依需求 14）
+5. THE Battle_Defense_System SHALL 在 UI 中同時顯示兩種成長路徑的選項，讓玩家明確選擇「穩定升級（消耗金幣）」或「隨機合成（零成本）」
+6. WHEN Guardian 等級已達 5 級時，THE Battle_Defense_System SHALL 禁用該 Guardian 的所有升級選項並提示「已達最高等級」
+
+### 需求 17：Roguelike 隨機天賦系統
+
+**用戶故事：** 身為玩家，我希望每場戰鬥開始前從隨機天賦中選擇一個，以便每局都有獨特的開局優勢與策略方向。
+
+#### 驗收標準
+
+1. WHEN 玩家確認套牌並進入戰鬥準備階段時，THE Battle_Defense_System SHALL 從天賦池中隨機抽取 3 個不重複的天賦供玩家選擇
+2. THE Battle_Defense_System SHALL 要求玩家從 3 個天賦中選擇 1 個後才能開始戰鬥，不可跳過選擇
+3. WHEN 玩家選擇天賦後，THE Battle_Defense_System SHALL 在整場戰鬥中持續套用該天賦效果
+4. THE Battle_Defense_System SHALL 支援以下天賦類型（至少包含）：
+   - 初始 SP 加成：戰鬥開始時額外獲得 20 點 SP
+   - 攻速強化：所有 Guardian 攻擊速度提升 10%
+   - 首波減員：第一波敵人數量減少 30%
+   - 合成幸運：合成時有 20% 機率保留原守衛種類（不隨機換種類）
+   - 金幣豐收：每波結束後額外獲得 wave × 5 金幣
+5. WHEN 天賦效果為百分比加成時，THE Battle_Defense_System SHALL 將天賦加成與 Series_Bonus 疊加計算
+6. THE Battle_Defense_System SHALL 在戰鬥 HUD 中持續顯示當前激活的天賦名稱與效果描述
+7. FOR ALL 天賦選擇操作，THE Battle_Defense_System SHALL 確保每次抽取的 3 個天賦互不重複
+
+### 需求 18：戰鬥界面佈局
+
+**用戶故事：** 身為玩家，我希望戰鬥界面佈局清晰、操作區域足夠大，以便在移動端也能輕鬆操作。
+
+#### 驗收標準
+
+1. THE Battle_Defense_System SHALL 將戰鬥界面劃分為三個垂直區域：頂部狀態欄（顯示波數、玩家 HP、SP、金幣）、中央戰鬥區（Enemy_Path + Grid）、底部操作區（召喚按鈕與操作控件）
+2. THE Battle_Defense_System SHALL 使中央戰鬥區（Enemy_Path + Grid 合計）佔屏幕可用高度的 60%
+3. THE Battle_Defense_System SHALL 在中央戰鬥區內，將 Enemy_Path 渲染於 Grid 正上方，兩者視覺分離且無重疊
+4. THE Battle_Defense_System SHALL 在底部操作區提供「召喚守衛」按鈕，點擊後觸發 Random_Summon 機制（依需求 13）
+5. THE Battle_Defense_System SHALL 在頂部狀態欄中即時更新並顯示當前波數、玩家生命值、SP 數值與金幣數量
+6. WHEN 戰鬥進行中，THE Battle_Defense_System SHALL 在底部操作區顯示當前召喚費用，讓玩家在點擊前知悉消耗
+
+### 需求 19：響應式 UI 設計
+
+**用戶故事：** 身為玩家，我希望界面在不同尺寸的裝置上都能正常顯示且易於觸控操作，以便在手機與平板上流暢遊玩。
+
+#### 驗收標準
+
+1. THE Battle_Defense_System SHALL 在桌面端（屏幕寬度 ≥ 768px）將 Grid 每個格子渲染為不小於 100×100px 的尺寸
+2. WHEN 屏幕寬度小於 768px 時，THE Battle_Defense_System SHALL 等比縮放 Grid 格子尺寸以確保整個棋盤在屏幕寬度內完整顯示，且單格最小不低於 60×60px
+3. THE Battle_Defense_System SHALL 確保所有可交互按鈕（召喚、合成、升級、確認、取消）的觸控區域不小於 44×44dp
+4. WHEN 屏幕寬度小於 768px 時，THE Battle_Defense_System SHALL 將底部操作區按鈕尺寸放大至不小於 56×56dp 以適應移動端觸控
+5. THE Battle_Defense_System SHALL 使用相對單位（百分比或 vw/vh）定義佈局比例，確保在 320px 至 1920px 寬度範圍內均可正常顯示
+6. WHEN 裝置方向由直向切換為橫向時，THE Battle_Defense_System SHALL 重新計算並調整 Grid 格子尺寸與佈局比例，確保棋盤仍完整可見

@@ -13,6 +13,7 @@ const NAV_ITEMS: { page: Page; label: string; icon: string }[] = [
   { page: 'draw',         label: 'Draw',        icon: '🎴' },
   { page: 'synthesis',    label: 'Synthesis',   icon: '⚗️' },
   { page: 'inventory',    label: 'Inventory',   icon: '🃏' },
+  { page: 'battle',       label: '防御战',      icon: '⚔️' },
   { page: 'shop',         label: 'Shop',        icon: '🛒' },
   { page: 'achievements', label: 'Achievements',icon: '🏆' },
   { page: 'settings',     label: 'Settings',    icon: '⚙️' },

@@ -79,7 +79,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
         {[
           { page: 'draw' as Page,         icon: '🎴', label: 'Draw Cards',    color: 'from-purple-800 to-purple-700' },
           { page: 'synthesis' as Page,    icon: '⚗️', label: 'Synthesis',     color: 'from-blue-800 to-blue-700' },
-          { page: 'gallery' as Page,      icon: '🖼️', label: 'Gallery',       color: 'from-indigo-800 to-indigo-700' },
+          { page: 'battle' as Page,       icon: '⚔️', label: 'Defense Battle',color: 'from-red-800 to-red-700' },
           { page: 'shop' as Page,         icon: '🛒', label: 'System Shop',   color: 'from-green-800 to-green-700' },
           { page: 'achievements' as Page, icon: '🏆', label: 'Achievements',  color: 'from-yellow-800 to-yellow-700' },
           { page: 'settings' as Page,     icon: '⚙️', label: 'Settings',      color: 'from-gray-800 to-gray-700' },
