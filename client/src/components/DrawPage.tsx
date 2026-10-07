@@ -17,7 +17,7 @@ const RARITY_STYLES: Record<Rarity, { text: string; label: string }> = {
 
 function toInfo(card: ICardInstance): DrawnCardInfo {
   const template = findPtcgTemplate(card.cardId);
-  return { icon: template?.name ?? '🃏', name: template?.name ?? `#${card.cardId}`, rarity: card.rarity };
+  return { icon: template?.name ?? '\uD83C\uDCCF', name: template?.name ?? `#${card.cardId}`, rarity: card.rarity };
 }
 
 function CardResultItem({ card }: { card: ICardInstance }) {
@@ -46,6 +46,7 @@ export function DrawPage() {
   const [lastResult, setLastResult] = useState<DrawResult | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
+  const [skipMotion, setSkipMotion] = useState(() => localStorage.getItem('cardplayground.skipReveal') === '1');
 
   const canAfford = useCallback(
     (count: number) => player.softCurrency >= selectedPack.cost * count,
@@ -61,61 +62,87 @@ export function DrawPage() {
     await addCards(result.cards);
     incrementActionCount();
     const firstPack = result.packs[0]?.cards ?? result.cards.slice(0, 5);
-    new PackOpenAnimation().play(selectedPack.icon, firstPack.map(toInfo), () => {
+    const finish = () => {
       setLastResult(result);
       setShowReveal(true);
       setIsDrawing(false);
-    });
-  }, [canAfford, isDrawing, selectedPack, player, activeEvents, setPlayer, addCards, incrementActionCount]);
+    };
+    const reduced = skipMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      finish();
+      return;
+    }
+    new PackOpenAnimation().play(selectedPack.icon, firstPack.map(toInfo), finish);
+  }, [canAfford, isDrawing, selectedPack, player, activeEvents, setPlayer, addCards, incrementActionCount, skipMotion]);
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold text-game-accent">Open packs</h2>
-      <p className="text-xs text-gray-400">M6a 30th CELEBRATION names + official Pokemon artwork.</p>
-      <div className="bg-game-surface border border-game-border rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
+      <header>
+        <p className="text-[11px] uppercase tracking-[0.28em] text-atelier-muted">Pack opening stage</p>
+        <h2 className="text-2xl font-semibold text-white">Five cards. One hit.</h2>
+      </header>
+      <div className="glass grid grid-cols-3 gap-3 rounded-2xl p-4 text-center">
         <div>
-          <div className="text-purple-400 text-xs mb-1">Balance</div>
-          <div className="text-game-gold font-bold">{player.softCurrency.toLocaleString()}</div>
+          <div className="text-[11px] text-atelier-muted">Purse</div>
+          <div className="font-semibold text-atelier-warm">{player.softCurrency.toLocaleString()}</div>
         </div>
         <div>
-          <div className="text-purple-400 text-xs mb-1">Packs since SAR/UR</div>
-          <div className="text-yellow-300 font-bold">{player.drawsSinceLastLegendary}</div>
+          <div className="text-[11px] text-atelier-muted">Since SAR/UR</div>
+          <div className="font-semibold text-white">{player.drawsSinceLastLegendary}</div>
         </div>
         <div>
-          <div className="text-purple-400 text-xs mb-1">Pity at</div>
-          <div className="text-pink-300 font-bold">{selectedPack.pityLegendaryAt} packs</div>
+          <div className="text-[11px] text-atelier-muted">Pity</div>
+          <div className="font-semibold text-white">{selectedPack.pityLegendaryAt}</div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {PACK_CONFIGS.map(pack => {
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {PACK_CONFIGS.map((pack, index) => {
           const isSelected = selectedPack.id === pack.id;
           return (
-            <button key={pack.id} onClick={() => setSelectedPack(pack)} className={`rounded-xl border p-4 text-left ${isSelected ? 'border-purple-400 bg-purple-900/50' : 'border-game-border bg-game-surface'}`}>
-              <div className="text-2xl mb-1">{pack.icon}</div>
-              <div className="font-bold text-white text-sm">{pack.name}</div>
-              <div className="text-game-gold text-sm">{pack.cost}</div>
-              <div className="text-gray-400 text-xs mt-1">{pack.description}</div>
+            <button
+              key={pack.id}
+              type="button"
+              onClick={() => setSelectedPack(pack)}
+              className={`pack-float glass min-h-11 rounded-2xl p-4 text-left ${isSelected ? 'ring-2 ring-atelier-warm' : ''}`}
+              style={{ animationDelay: `${index * 0.35}s` }}
+            >
+              <div className="text-2xl">{pack.icon}</div>
+              <div className="mt-2 font-semibold text-white">{pack.name}</div>
+              <div className="text-sm text-atelier-warm">{pack.cost}</div>
+              <div className="mt-1 text-xs text-atelier-muted">{pack.description}</div>
             </button>
           );
         })}
       </div>
 
+      <label className="flex min-h-11 items-center gap-2 text-sm text-atelier-muted">
+        <input
+          type="checkbox"
+          checked={skipMotion}
+          onChange={(e) => {
+            setSkipMotion(e.target.checked);
+            localStorage.setItem('cardplayground.skipReveal', e.target.checked ? '1' : '0');
+          }}
+        />
+        Skip animation
+      </label>
+
       <div className="flex gap-3">
-        <button onClick={() => handleDraw(1)} disabled={!canAfford(1) || isDrawing} className="flex-1 py-3 rounded-xl font-bold text-sm bg-purple-700 disabled:opacity-40 text-white">
-          {isDrawing ? 'Opening…' : `1 pack — ${selectedPack.cost}`}
+        <button type="button" onClick={() => handleDraw(1)} disabled={!canAfford(1) || isDrawing} className="glow-press min-h-12 flex-1 rounded-2xl bg-white/10 font-semibold text-white">
+          {isDrawing ? 'Opening\u2026' : `Open 1 \u00b7 ${selectedPack.cost}`}
         </button>
-        <button onClick={() => handleDraw(10)} disabled={!canAfford(10) || isDrawing} className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-purple-700 to-pink-700 disabled:opacity-40 text-white">
-          {isDrawing ? 'Opening…' : `10 packs — ${selectedPack.cost * 10}`}
+        <button type="button" onClick={() => handleDraw(10)} disabled={!canAfford(10) || isDrawing} className="glow-press min-h-12 flex-1 rounded-2xl bg-atelier-warm font-semibold text-black">
+          {isDrawing ? 'Opening\u2026' : `Open 10 \u00b7 ${selectedPack.cost * 10}`}
         </button>
       </div>
 
       {showReveal && lastResult && (
-        <div className="bg-game-surface border border-game-border rounded-xl p-4 space-y-4">
-          <h3 className="font-bold text-white">{lastResult.packs.length} pack(s) · {lastResult.cards.length} cards</h3>
+        <div className="glass space-y-4 rounded-2xl p-4">
+          <h3 className="font-semibold text-white">{lastResult.packs.length} pack(s) \u00b7 {lastResult.cards.length} cards</h3>
           {lastResult.packs.map((pack, i) => (
             <div key={i} className="space-y-2">
-              <div className="text-xs text-purple-300">Pack {i + 1} hit: {pack.hitKind.toUpperCase()} → {pack.hitRarity}</div>
+              <div className="text-xs uppercase tracking-wider text-atelier-warm">Pack {i + 1} \u00b7 {pack.hitKind} \u00b7 {pack.hitRarity}</div>
               <div className="flex flex-wrap gap-3">
                 {pack.cards.map((card, j) => <CardResultItem key={j} card={card} />)}
               </div>
