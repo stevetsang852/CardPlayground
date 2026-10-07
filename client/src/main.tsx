@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
+import './atelier.css';
 import './card-effects.css';
 import './vendor/pokemon-cards-css/index.css';
 import './ptcg-card.css';
