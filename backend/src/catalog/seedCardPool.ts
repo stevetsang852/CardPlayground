@@ -71,14 +71,20 @@ export async function seedCardPool(): Promise<{ packs: number; templates: number
   for (const card of KADO_M6A_CARDS) {
     const rarity = guessRarity(card.name, card.number);
     const existing = await collections.cardTemplates().doc(card.id).get();
-    if (existing.exists) continue;
+    if (existing.exists) {
+      const data = existing.data() || {};
+      if (!data.imageUrl && card.imageUrl) {
+        await collections.cardTemplates().doc(card.id).set({ ...data, imageUrl: card.imageUrl });
+      }
+      continue;
+    }
     await collections.cardTemplates().doc(card.id).set({
       ...card,
       templateId: card.id,
       rarity,
       description: `${card.name} (${card.number})`,
       theme: 'ptcg',
-      imageUrl: '',
+      imageUrl: card.imageUrl,
       score: rarity === 'legendary' ? 100 : rarity === 'epic' ? 40 : rarity === 'rare' ? 15 : 5,
       isLimitedEdition: false,
       obtainedAt: new Date().toISOString(),

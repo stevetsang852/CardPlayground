@@ -6,6 +6,7 @@ describe('kadoSnapshot', () => {
     expect(KADO_PACKS.length).toBeGreaterThanOrEqual(3);
     expect(KADO_M6A_CARDS.length).toBeGreaterThanOrEqual(20);
     expect(KADO_M6A_CARDS.every(c => c.sourceUrl.includes('kado.hk/card'))).toBe(true);
+    expect(KADO_M6A_CARDS.every(c => c.imageUrl.includes('card-images/tw-cards'))).toBe(true);
     expect(KADO_M6A_CARDS.some(c => c.name.includes('噴火龍'))).toBe(true);
   });
 
