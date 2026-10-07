@@ -83,12 +83,12 @@ function instanceOf(rarity: Rarity, hitKind?: string): ICardInstance {
 }
 
 function openOnePack(pack: PackConfig, pityReady: boolean): OpenedPack {
-  const cards: ICardInstance[] = [
-    instanceOf('common', 'c'),
-    instanceOf('common', 'c'),
-    instanceOf('common', 'c'),
-    instanceOf('rare', 'u'),
-  ];
+  const total = Math.max(1, pack.cardsPerPack);
+  const cards: ICardInstance[] = [];
+  for (let i = 0; i < total - 1; i += 1) {
+    const rareSlot = i % 4 === 3;
+    cards.push(instanceOf(rareSlot ? 'rare' : 'common', rareSlot ? 'u' : 'c'));
+  }
   let hitKind = rollJpHitSlot(cryptoRandom.nextFloat());
   if (pack.id === 'premium' && hitKind === 'r' && cryptoRandom.nextFloat() < 0.15) hitKind = 'ar';
   if (pack.id === 'legendary' && (hitKind === 'r' || hitKind === 'rr')) hitKind = cryptoRandom.nextFloat() < 0.4 ? 'sar' : 'sr';

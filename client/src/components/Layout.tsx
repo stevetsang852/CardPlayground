@@ -17,6 +17,7 @@ const NAV_ITEMS: { page: Page; label: string; icon: string }[] = [
   { page: 'shop',         label: 'Shop',        icon: '🛒' },
   { page: 'achievements', label: 'Achievements',icon: '🏆' },
   { page: 'settings',     label: 'Settings',    icon: '⚙️' },
+  { page: 'admin',        label: 'Admin',       icon: '🛠️' },
 ];
 
 export function Layout({ currentPage, onNavigate, children }: LayoutProps) {
