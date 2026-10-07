@@ -15,8 +15,6 @@ import type {
   BattleReward,
 } from './BattleTypes';
 
-// ── Arbitraries ──────────────────────────────────────────────────────────────
-
 const battleModeArb = fc.constantFrom<BattleMode>(
   'daily_challenge',
   'endless',
@@ -64,6 +62,7 @@ const battleStateArb: fc.Arbitrary<BattleState> = fc.record({
   wave: fc.integer({ min: 1, max: 100 }),
   playerHp: fc.integer({ min: 0, max: 100 }),
   sp: fc.integer({ min: 0, max: 999 }),
+  coins: fc.integer({ min: 0, max: 9999 }),
   grid: fc.array(fc.array(gridCellArb, { minLength: 0, maxLength: 10 }), {
     minLength: 0,
     maxLength: 10,
@@ -76,13 +75,10 @@ const battleStateArb: fc.Arbitrary<BattleState> = fc.record({
 
 /** Non-JSON strings: printable ASCII that is not valid JSON */
 const malformedStringArb: fc.Arbitrary<string> = fc.oneof(
-  // Plain words / sentences
   fc.string({ minLength: 1, maxLength: 50 }).filter((s) => {
     try { JSON.parse(s); return false; } catch { return true; }
   }),
-  // Truncated JSON objects
   fc.string({ minLength: 1, maxLength: 20 }).map((s) => `{${s}`),
-  // Random printable characters that are unlikely to be valid JSON
   fc.constantFrom(
     'not json',
     'hello world',
@@ -95,33 +91,24 @@ const malformedStringArb: fc.Arbitrary<string> = fc.oneof(
   )
 );
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
 describe('BattleSerializer property tests', () => {
   const serializer = new BattleSerializer();
 
-  /**
-   * Property 12: Round-trip equivalence
-   * deserialize(serialize(state)) produces an equivalent BattleState
-   *
-   * **Validates: Requirements 12.5**
-   */
   it('Property 12: round-trip deserialize(serialize(state)) ≡ state', () => {
     fc.assert(
       fc.property(battleStateArb, (state) => {
         const json = serializer.serialize(state);
         const result = serializer.deserialize(json);
 
-        // Must not return an Error
         expect(result).not.toBeInstanceOf(Error);
 
         const restored = result as BattleState;
 
-        // All top-level required fields must be equivalent
         expect(restored.mode).toBe(state.mode);
         expect(restored.wave).toBe(state.wave);
         expect(restored.playerHp).toBe(state.playerHp);
         expect(restored.sp).toBe(state.sp);
+        expect(restored.coins).toBe(state.coins);
         expect(restored.enemies).toEqual(state.enemies);
         expect(restored.deck).toEqual(state.deck);
         expect(restored.activeBonuses).toEqual(state.activeBonuses);
@@ -132,23 +119,15 @@ describe('BattleSerializer property tests', () => {
     );
   });
 
-  /**
-   * Property 13: Malformed input returns Error, never throws
-   * For any non-JSON string, deserialize returns an Error instance
-   *
-   * **Validates: Requirements 12.3**
-   */
   it('Property 13: malformed input returns Error and never throws', () => {
     fc.assert(
       fc.property(malformedStringArb, (badInput) => {
         let result: BattleState | Error | undefined;
 
-        // Must not throw
         expect(() => {
           result = serializer.deserialize(badInput);
         }).not.toThrow();
 
-        // Must return an Error instance
         expect(result).toBeInstanceOf(Error);
       }),
       { numRuns: 300 }
