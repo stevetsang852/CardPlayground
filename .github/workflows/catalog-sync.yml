@@ -8,73 +8,45 @@ on:
 
 concurrency:
   group: catalog-sync
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   sync:
     name: daily-pokemon-card-download
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     permissions:
       contents: write
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
     env:
-      DATABASE_DRIVER: local
-      LOCAL_DB_PATH: ./data/local-db.json
-      REDIS_URL: redis://127.0.0.1:6379
-      CATALOG_PRIMARY: kado
-      KADO_SYNC_MAX_SETS: "3"
-      KADO_REQUEST_DELAY_MS: "400"
-      KADO_CATALOG_TTL_HOURS: "24"
-      KADO_SYNC_ON_START: "false"
       M6A_SET_URL: https://www.kado.hk/database/tw/M6a
-    defaults:
-      run:
-        working-directory: backend
+      KADO_REQUEST_DELAY_MS: "400"
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
+          cache: npm
       - name: Install workspace deps
-        working-directory: .
-        run: npm install
+        run: npm ci --no-audit --no-fund
       - name: Download M6a Pokemon card data and card-scan URLs
-        id: download
+        working-directory: backend
         run: npx ts-node-dev --transpile-only --exit-child -r tsconfig-paths/register src/catalog/downloadM6aCards.ts
-      - name: Sync up to 3 public sets
-        continue-on-error: true
-        id: sync
-        run: npx ts-node-dev --transpile-only --exit-child -r tsconfig-paths/register src/catalog/runSync.ts
       - name: Upload catalog artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: catalog-snapshot
-          path: |
-            backend/data/m6a-cards.json
-            backend/data/catalog-snapshot.json
-            backend/data/local-db.json
+          path: backend/data/m6a-cards.json
           if-no-files-found: ignore
           retention-days: 14
       - name: Commit downloaded card data
-        if: hashFiles('backend/data/m6a-cards.json') != ''
-        working-directory: .
+        if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add backend/data/m6a-cards.json backend/data/catalog-snapshot.json
+          git add backend/data/m6a-cards.json
           if git diff --cached --quiet; then
             echo "No card data change"
             exit 0

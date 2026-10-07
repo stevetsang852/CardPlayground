@@ -1,11 +1,14 @@
+# syntax=docker/dockerfile:1
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 COPY tsconfig.json jest.config.js ./
-COPY backend/package.json backend/
-COPY shared/package.json shared/
-COPY client/package.json client/
-RUN npm install
+COPY backend/package.json backend/package.json
+COPY shared/package.json shared/package.json
+COPY client/package.json client/package.json
+# Install only the web workspace, not the API server packages.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund --workspace=client --workspace=shared --include-workspace-root
 COPY shared shared
 COPY client client
 

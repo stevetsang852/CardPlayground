@@ -6,6 +6,7 @@ const validState: BattleState = {
   wave: 1,
   playerHp: 100,
   sp: 50,
+  coins: 0,
   grid: [],
   enemies: [],
   deck: { cards: ['c1', 'c2', 'c3', 'c4', 'c5'] },
@@ -20,7 +21,6 @@ describe('BattleSerializer', () => {
     serializer = new BattleSerializer();
   });
 
-  // Req 12.1 / 12.2 – round-trip
   describe('serialize / deserialize round-trip', () => {
     it('serialize produces a valid JSON string', () => {
       const json = serializer.serialize(validState);
@@ -37,10 +37,10 @@ describe('BattleSerializer', () => {
       expect(state.wave).toBe(validState.wave);
       expect(state.playerHp).toBe(validState.playerHp);
       expect(state.sp).toBe(validState.sp);
+      expect(state.coins).toBe(validState.coins);
     });
   });
 
-  // Req 12.3 – malformed JSON returns Error (does NOT throw)
   describe('deserialize – malformed JSON (Req 12.3)', () => {
     it('returns an Error for completely invalid JSON', () => {
       const result = serializer.deserialize('not json at all');
@@ -68,7 +68,6 @@ describe('BattleSerializer', () => {
     });
   });
 
-  // Req 12.4 – missing required fields returns Error listing ALL missing fields
   describe('deserialize – missing required fields (Req 12.4)', () => {
     const requiredFields = [
       'mode', 'wave', 'playerHp', 'sp', 'grid', 'enemies', 'deck', 'activeBonuses', 'rewards',
@@ -78,7 +77,6 @@ describe('BattleSerializer', () => {
       const result = serializer.deserialize('{}');
       expect(result).toBeInstanceOf(Error);
       const msg = (result as Error).message;
-      // Every required field must appear in the error message
       for (const field of requiredFields) {
         expect(msg).toContain(field);
       }
@@ -89,10 +87,8 @@ describe('BattleSerializer', () => {
       const result = serializer.deserialize(JSON.stringify(partial));
       expect(result).toBeInstanceOf(Error);
       const msg = (result as Error).message;
-      // Present fields must NOT appear as missing
       expect(msg).not.toContain('mode');
       expect(msg).not.toContain('wave');
-      // Absent fields must appear
       expect(msg).toContain('playerHp');
       expect(msg).toContain('sp');
       expect(msg).toContain('grid');
@@ -104,12 +100,10 @@ describe('BattleSerializer', () => {
     });
   });
 
-  // Req 12.6 – prettyPrint returns human-readable JSON with indentation
   describe('prettyPrint (Req 12.6)', () => {
     it('returns a string with 2-space indentation', () => {
       const pretty = serializer.prettyPrint(validState);
       expect(typeof pretty).toBe('string');
-      // 2-space indent means lines like "  \"mode\":"
       expect(pretty).toMatch(/^\{\n  "/);
     });
 
