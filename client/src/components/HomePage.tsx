@@ -1,7 +1,5 @@
-import React from 'react';
 import { useGameStore } from '../store';
 import { getSeasonProgress } from '../game/SeasonService';
-import { CurrencyDisplay } from './CurrencyDisplay';
 import type { Page } from '../App';
 
 interface HomePageProps {
@@ -11,95 +9,61 @@ interface HomePageProps {
 export function HomePage({ onNavigate }: HomePageProps) {
   const { player, cards, activeEvents, seasonMissions } = useGameStore();
   const seasonProgress = getSeasonProgress(seasonMissions);
+  const seasonWidth = Math.min((seasonProgress.completedMissions / Math.max(seasonProgress.nextMilestoneAt, 1)) * 100, 100);
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-game-accent">✨ Card Mystery Realm</h2>
+    <div className="space-y-5">
+      <section className="glass relative overflow-hidden rounded-[20px] px-5 py-8 text-center">
+        <p className="text-[11px] uppercase tracking-[0.32em] text-atelier-muted">Tonight's table</p>
+        <div className="pack-float mx-auto mt-6 h-40 w-28 rounded-2xl border border-amber-200/30 bg-gradient-to-b from-amber-300/80 to-amber-700 shadow-[0_20px_50px_rgba(245,166,35,0.35)]" aria-hidden="true" />
+        <h2 className="mt-6 text-2xl font-semibold text-white">Open a five-card pack</h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-atelier-muted">3 commons, one uncommon or rare, then the hit slot.</p>
+        <button type="button" onClick={() => onNavigate('draw')} className="glow-press mt-6 min-h-12 rounded-full bg-atelier-warm px-8 text-sm font-semibold text-black">
+          Step up to the counter
+        </button>
+      </section>
 
-      {/* Player stats */}
-      <div className="bg-game-surface border border-game-border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div>
-          <div className="text-purple-400 text-xs mb-1">Soft Currency</div>
-          <CurrencyDisplay amount={player.softCurrency} />
-        </div>
-        <div>
-          <div className="text-purple-400 text-xs mb-1">Luck Value</div>
-          <div className="text-game-gold font-bold">🍀 {player.luckValue}</div>
-        </div>
-        <div>
-          <div className="text-purple-400 text-xs mb-1">Total Draws</div>
-          <div className="text-white font-bold">{player.totalDraws}</div>
-        </div>
-        <div>
-          <div className="text-purple-400 text-xs mb-1">Collection</div>
-          <div className="text-white font-bold">{cards.length} cards</div>
-        </div>
-      </div>
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ['Coins', player.softCurrency.toLocaleString()],
+          ['Luck', String(player.luckValue)],
+          ['Pulls', String(player.totalDraws)],
+          ['Binder', `${cards.length}`],
+        ].map(([label, value]) => (
+          <div key={label} className="glass rounded-2xl p-4">
+            <div className="text-[11px] uppercase tracking-wider text-atelier-muted">{label}</div>
+            <div className="mt-1 text-lg font-semibold text-white">{value}</div>
+          </div>
+        ))}
+      </section>
 
-      {/* Active events */}
       {activeEvents.length > 0 && (
-        <div className="bg-yellow-950/50 border border-yellow-700 rounded-xl p-3">
-          <div className="text-yellow-400 text-sm font-bold mb-2">⚡ Active Events</div>
-          <div className="flex flex-wrap gap-2">
-            {activeEvents.map(event => (
-              <div key={event.id} className="bg-yellow-900/50 border border-yellow-700 rounded px-3 py-1 text-xs">
-                <span className="text-yellow-300 font-bold">
-                  {event.type === 'lucky' ? '🍀 Lucky Moment' :
-                   event.type === 'double_drop' ? '✨ Double Drop' :
-                   '⚗️ Synthesis Boost'}
-                </span>
-                <span className="text-yellow-500 ml-2">{event.remainingActions} actions left</span>
-              </div>
+        <section className="glass rounded-2xl p-4">
+          <div className="text-sm font-semibold text-atelier-warm">On the table now</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {activeEvents.map((event) => (
+              <span key={event.id} className="rounded-full bg-white/10 px-3 py-1 text-xs text-white">
+                {event.type.replace('_', ' ')} · {event.remainingActions} left
+              </span>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Season progress */}
-      <div className="bg-game-surface border border-game-border rounded-xl p-4">
-        <div className="text-purple-400 text-sm mb-2">📅 Season Progress</div>
-        <div className="flex items-center gap-3">
-          <div className="flex-1 bg-purple-950 rounded-full h-2">
-            <div
-              className="bg-purple-500 h-2 rounded-full transition-all"
-              style={{ width: `${Math.min((seasonProgress.completedMissions / Math.max(seasonProgress.nextMilestoneAt, 1)) * 100, 100)}%` }}
-            />
-          </div>
-          <span className="text-purple-300 text-xs whitespace-nowrap">
-            {seasonProgress.completedMissions} / {seasonProgress.nextMilestoneAt} missions
-          </span>
+      <section className="glass rounded-2xl p-4">
+        <div className="mb-2 flex justify-between text-xs text-atelier-muted">
+          <span>Season</span>
+          <span>{seasonProgress.completedMissions} / {seasonProgress.nextMilestoneAt}</span>
         </div>
-        <div className="text-yellow-400 text-xs mt-1">
-          Next reward: 🪙 {seasonProgress.nextMilestoneReward.toLocaleString()}
+        <div className="h-2 overflow-hidden rounded-full bg-black/40">
+          <div className="h-full bg-atelier-warm" style={{ width: `${seasonWidth}%` }} />
         </div>
-      </div>
+        <p className="mt-2 text-xs text-atelier-warm">Next purse {seasonProgress.nextMilestoneReward.toLocaleString()}</p>
+      </section>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {[
-          { page: 'draw' as Page,         icon: '🎴', label: 'Draw Cards',    color: 'from-purple-800 to-purple-700' },
-          { page: 'synthesis' as Page,    icon: '⚗️', label: 'Synthesis',     color: 'from-blue-800 to-blue-700' },
-          { page: 'battle' as Page,       icon: '⚔️', label: 'Defense Battle',color: 'from-red-800 to-red-700' },
-          { page: 'shop' as Page,         icon: '🛒', label: 'System Shop',   color: 'from-green-800 to-green-700' },
-          { page: 'achievements' as Page, icon: '🏆', label: 'Achievements',  color: 'from-yellow-800 to-yellow-700' },
-          { page: 'settings' as Page,     icon: '⚙️', label: 'Settings',      color: 'from-gray-800 to-gray-700' },
-        ].map(({ page, icon, label, color }) => (
-          <button
-            key={page}
-            onClick={() => onNavigate(page)}
-            className={`bg-gradient-to-br ${color} hover:brightness-110 rounded-xl p-4 text-center transition-all`}
-          >
-            <div className="text-2xl mb-1">{icon}</div>
-            <div className="text-white text-sm font-medium">{label}</div>
-          </button>
-        ))}
-      </div>
-
-      {/* Pity info */}
-      <div className="bg-game-surface border border-game-border rounded-xl p-3 text-xs text-purple-400">
-        <span className="mr-4">⚔️ Legendary pity: {player.drawsSinceLastLegendary} draws</span>
-        <span>✨ Mythic pity: {player.drawsSinceLastMythic} draws</span>
-      </div>
+      <p className="text-xs text-atelier-muted">
+        SAR/UR gap {player.drawsSinceLastLegendary} · special gap {player.drawsSinceLastMythic}
+      </p>
     </div>
   );
 }

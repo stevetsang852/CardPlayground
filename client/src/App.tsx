@@ -18,25 +18,21 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const { loadFromDB, isInitialized, isLoading, player, cards, achievements, setPlayer, seasonMissions } = useGameStore();
 
-  // Load data from IndexedDB on mount
   useEffect(() => {
     loadFromDB();
   }, [loadFromDB]);
 
-  // Handle daily login check after data is loaded
   useEffect(() => {
     if (!isInitialized) return;
 
     const loginResult = checkDailyLogin(player);
     if (loginResult.isNewDay) {
       setPlayer(loginResult.updatedPlayer as typeof player);
-      // Generate fresh daily missions if needed
       if (seasonMissions.length === 0) {
         useGameStore.setState({ seasonMissions: generateDailyMissions() });
       }
     }
 
-    // Check achievements
     const { newlyUnlocked, currencyReward } = checkAchievements(player, cards, achievements);
     if (newlyUnlocked.length > 0) {
       newlyUnlocked.forEach(a => useGameStore.getState().unlockAchievement(a.id, a.progress));
@@ -48,8 +44,8 @@ export default function App() {
 
   if (isLoading || !isInitialized) {
     return (
-      <div className="min-h-screen bg-game-bg flex items-center justify-center">
-        <div className="text-game-accent text-xl animate-pulse">Loading Card Mystery Realm...</div>
+      <div className="atelier-bg flex min-h-screen items-center justify-center">
+        <div className="glass rounded-2xl px-6 py-4 text-atelier-warm">Setting the table\u2026</div>
       </div>
     );
   }
