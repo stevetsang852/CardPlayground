@@ -76,41 +76,48 @@ export function InventoryPage() {
   const detail = detailCardId !== null ? findPtcgTemplate(detailCardId) : undefined;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 pb-8">
-      <div className="px-4 pt-6 pb-3">
-        <h1 className="text-2xl font-bold text-game-accent mb-1">Collection</h1>
-        <p className="text-sm text-gray-400">{instancesByCardId.size} / {PTCG_TEMPLATES.length} M6a Pokemon</p>
+    <div className="pb-4 text-atelier-text">
+      <div className="pb-3">
+        <p className="text-[11px] uppercase tracking-[0.28em] text-atelier-muted">Binder</p>
+        <h1 className="text-2xl font-semibold text-white">Collection</h1>
+        <p className="text-sm text-atelier-muted">{instancesByCardId.size} / {PTCG_TEMPLATES.length} owned</p>
       </div>
-      <div className="flex border-b border-gray-800 px-4 mb-4">
+      <div className="flex border-b border-white/10 mb-4">
         {(['inventory', 'catalog'] as Tab[]).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 text-sm font-semibold capitalize border-b-2 -mb-px ${
-            tab === t ? 'border-game-accent text-game-accent' : 'border-transparent text-gray-500'
+          <button key={t} type="button" onClick={() => setTab(t)} className={`min-h-11 px-5 text-sm font-semibold capitalize border-b-2 -mb-px ${
+            tab === t ? 'border-atelier-warm text-atelier-warm' : 'border-transparent text-atelier-muted'
           }`}>{t}</button>
         ))}
       </div>
-      <div className="px-4 flex flex-wrap gap-2 mb-4">
-        <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm w-36" />
-        <select value={filterRarity} onChange={(e) => setFilterRarity(e.target.value as Rarity | 'all')} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm">
+      <div className="flex flex-wrap gap-2 mb-4">
+        <input type="search" placeholder="Search the binder" value={search} onChange={(e) => setSearch(e.target.value)} className="glass min-h-11 rounded-xl px-3 text-sm text-white" />
+        <select value={filterRarity} onChange={(e) => setFilterRarity(e.target.value as Rarity | 'all')} className="glass min-h-11 rounded-xl px-3 text-sm">
           <option value="all">All rarities</option>
           {(['common', 'rare', 'epic', 'legendary'] as Rarity[]).map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
-        <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm">
+        <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="glass min-h-11 rounded-xl px-3 text-sm">
           <option value="obtained">Recent</option>
           <option value="rarity">Rarity</option>
           <option value="name">Name</option>
         </select>
       </div>
-      <div className="px-4 flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3">
+        {(tab === 'inventory' ? inventoryCards : filtered).length === 0 && (
+          <div className="glass w-full rounded-2xl p-6 text-center">
+            <p className="text-white">The binder is still quiet.</p>
+            <p className="mt-1 text-sm text-atelier-muted">Open a pack and the first five cards will land here.</p>
+          </div>
+        )}
         {(tab === 'inventory' ? inventoryCards : filtered).map((template) => (
           <CardFace key={template.id} cardId={template.id} rarity={template.rarity} count={instancesByCardId.get(template.id)?.length} onClick={() => setDetailCardId(template.id)} extraClass={instancesByCardId.has(template.id) ? '' : 'opacity-30'} />
         ))}
       </div>
       {detail && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setDetailCardId(null)}>
-          <div className="bg-gray-900 rounded-xl p-4 max-w-xs" onClick={(e) => e.stopPropagation()}>
+          <div className="glass max-w-xs rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
             <img src={detail.imageUrl} alt={detail.name} className="w-48 h-48 object-contain mx-auto" />
             <div className="text-center mt-2 font-bold">{detail.name}</div>
-            <div className="text-center text-xs text-gray-400">{detail.series} · #{detail.id}</div>
+            <div className="text-center text-xs text-atelier-muted">{detail.series} #{detail.id}</div>
           </div>
         </div>
       )}
