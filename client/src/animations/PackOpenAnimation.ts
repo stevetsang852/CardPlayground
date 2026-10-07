@@ -38,10 +38,12 @@ class HoloCardMesh {
   private tex: THREE.CanvasTexture;
   private icon: string;
   private rarity: string;
+  private image: HTMLImageElement | null;
 
-  constructor(icon: string, rarity: string, size = 1) {
+  constructor(icon: string, rarity: string, size = 1, image: HTMLImageElement | null = null) {
     this.icon = icon;
     this.rarity = rarity;
+    this.image = image;
 
     this.canvas = document.createElement('canvas');
     this.canvas.width = 256;
@@ -54,7 +56,7 @@ class HoloCardMesh {
       transparent: true,
       side: THREE.DoubleSide,
       emissive: new THREE.Color(RARITY_COLOR[rarity] ?? 0x888888),
-      emissiveIntensity: rarity === 'mythic' ? 0.3 : rarity === 'legendary' ? 0.25 : 0.15,
+      emissiveIntensity: image ? 0.04 : rarity === 'mythic' ? 0.3 : rarity === 'legendary' ? 0.25 : 0.15,
     });
 
     const geo = new THREE.PlaneGeometry(size * 0.7, size);
@@ -100,19 +102,25 @@ class HoloCardMesh {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // ── Icon ──────────────────────────────────────────────────────────────
-    ctx.font = '110px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(this.icon, W / 2, H / 2 - 10);
-
-    // ── Rarity label ──────────────────────────────────────────────────────
-    const labelColor = borderColor;
-    ctx.font = 'bold 18px "Segoe UI", sans-serif';
-    ctx.fillStyle = labelColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText(this.rarity.toUpperCase(), W / 2, H - 20);
+    if (this.image) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(10, 10, W - 20, H - 20, 12);
+      ctx.clip();
+      const iw = this.image.naturalWidth || this.image.width;
+      const ih = this.image.naturalHeight || this.image.height;
+      const scale = Math.max((W - 20) / iw, (H - 20) / ih);
+      const dw = iw * scale;
+      const dh = ih * scale;
+      ctx.drawImage(this.image, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#f4efe6';
+      ctx.font = 'bold 22px "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this.icon, W / 2, H / 2, W - 28);
+    }
 
     this.tex.needsUpdate = true;
   }
@@ -272,8 +280,18 @@ class HoloCardMesh {
   }
 }
 
-function makeCardMesh(icon: string, rarity: string, size = 1): THREE.Mesh {
-  return new HoloCardMesh(icon, rarity, size).mesh;
+function makeCardMesh(card: DrawnCardInfo, size: number, image: HTMLImageElement | null): THREE.Mesh {
+  return new HoloCardMesh(card.name || card.icon, card.rarity, size, image).mesh;
+}
+
+function loadCardImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 
 function makePackMesh(icon: string): THREE.Mesh {
@@ -375,6 +393,7 @@ export interface DrawnCardInfo {
   icon: string;
   name: string;
   rarity: string;
+  imageUrl?: string;
 }
 
 export class PackOpenAnimation {
@@ -390,7 +409,7 @@ export class PackOpenAnimation {
     onDone: () => void
   ): void {
     this._setup();
-    this._run(packIcon, cards, onDone);
+    void this._run(packIcon, cards, onDone);
   }
 
   private _setup(): void {
@@ -466,15 +485,19 @@ export class PackOpenAnimation {
     this.rafId = null;
   }
 
-  private _run(packIcon: string, cards: DrawnCardInfo[], onDone: () => void): void {
-    const scene = this.scene!;
+  private async _run(packIcon: string, cards: DrawnCardInfo[], onDone: () => void): Promise<void> {
+    const images = await Promise.all(
+      cards.map((card) => (card.imageUrl ? loadCardImage(card.imageUrl) : Promise.resolve(null))),
+    );
+    const scene = this.scene;
+    if (!scene) return;
 
     // ── Phase 1: Pack appears and spins ──────────────────────────────────────
     const packMesh = makePackMesh(packIcon);
     packMesh.scale.set(0, 0, 0);
     scene.add(packMesh);
 
-    const tl = gsap.timeline({ timeScale: 50 });
+    const tl = gsap.timeline();
 
     // Pack pops in
     tl.to(packMesh.scale, { x: 1.8, y: 1.8, z: 1.8, duration: 0.5, ease: 'back.out(2)' });
@@ -507,7 +530,7 @@ export class PackOpenAnimation {
       const tx = offsetX + col * spacingX;
       const ty = offsetY - row * spacingY;
 
-      const mesh = makeCardMesh(card.icon, card.rarity, isSingle ? 2.2 : 1.3);
+      const mesh = makeCardMesh(card, isSingle ? 2.2 : 1.3, images[i] ?? null);
       mesh.position.set(tx, ty - 8, 0); // start below screen
       mesh.rotation.y = Math.PI; // start face-down
       scene.add(mesh);
