@@ -14,7 +14,8 @@
     "test": "npm run test --workspaces",
     "dev:backend": "npm run dev -w backend",
     "dev:client": "npm run dev -w client",
-    "sync:catalog": "npm exec -w backend -- ts-node -r tsconfig-paths/register src/catalog/runSync.ts"
+    "sync:catalog": "npm exec -w backend -- ts-node -r tsconfig-paths/register src/catalog/runSync.ts",
+    "download:cards": "npm exec -w backend -- ts-node -r tsconfig-paths/register src/catalog/downloadM6aCards.ts"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

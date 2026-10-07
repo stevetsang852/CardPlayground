@@ -1,4 +1,4 @@
-import { parsePackIndex, parseSetCards } from './kadoParser';
+import { parsePackIndex, parseSetCards, parseTwSetList, extractCardImageUrl } from './kadoParser';
 
 describe('kadoParser', () => {
   it('parses pack links from the public database index', () => {
@@ -21,5 +21,19 @@ describe('kadoParser', () => {
     const cards = parseSetCards(html, 'set_m6a', 'https://www.kado.hk/set/m6a');
     expect(cards.length).toBeGreaterThanOrEqual(2);
     expect(cards.some(c => c.name === '蛋蛋' && c.number === '001')).toBe(true);
+  });
+
+  it('parses live TW set markup and card-scan og:image', () => {
+    const html = `
+      <a href="/card/tw/9683982f-bbbf-4fa4-8310-7ad900126365">137 <!-- -->噴火龍</a>
+      <meta property="og:image" content="https://nyqehdzrfeoutdzpwzit.supabase.co/storage/v1/object/public/card-images/tw-cards/20045.png"/>
+    `;
+    const cards = parseTwSetList(html);
+    expect(cards).toHaveLength(1);
+    expect(cards[0].name).toBe('噴火龍');
+    expect(cards[0].number).toBe('137');
+    expect(cards[0].id).toBe('tw_9683982f-bbbf-4fa4-8310-7ad900126365');
+    expect(extractCardImageUrl(html)).toContain('card-images/tw-cards/20045.png');
+    expect(extractCardImageUrl(html)).not.toContain('official-artwork');
   });
 });

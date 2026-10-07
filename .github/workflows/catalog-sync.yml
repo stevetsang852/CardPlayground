@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   sync:
-    name: daily-limited-catalog
+    name: daily-pokemon-card-download
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: write
     services:
@@ -33,9 +33,10 @@ jobs:
       REDIS_URL: redis://127.0.0.1:6379
       CATALOG_PRIMARY: kado
       KADO_SYNC_MAX_SETS: "3"
-      KADO_REQUEST_DELAY_MS: "800"
+      KADO_REQUEST_DELAY_MS: "400"
       KADO_CATALOG_TTL_HOURS: "24"
       KADO_SYNC_ON_START: "false"
+      M6A_SET_URL: https://www.kado.hk/database/tw/M6a
     defaults:
       run:
         working-directory: backend
@@ -49,6 +50,9 @@ jobs:
       - name: Install workspace deps
         working-directory: .
         run: npm install
+      - name: Download M6a Pokemon card data and card-scan URLs
+        id: download
+        run: npx ts-node-dev --transpile-only --exit-child -r tsconfig-paths/register src/catalog/downloadM6aCards.ts
       - name: Sync up to 3 public sets
         continue-on-error: true
         id: sync
@@ -59,26 +63,21 @@ jobs:
         with:
           name: catalog-snapshot
           path: |
+            backend/data/m6a-cards.json
             backend/data/catalog-snapshot.json
             backend/data/local-db.json
           if-no-files-found: ignore
           retention-days: 14
-      - name: Commit snapshot if small
-        if: hashFiles('backend/data/catalog-snapshot.json') != ''
+      - name: Commit downloaded card data
+        if: hashFiles('backend/data/m6a-cards.json') != ''
         working-directory: .
         run: |
-          SIZE=$(wc -c < backend/data/catalog-snapshot.json)
-          echo "snapshot bytes=$SIZE"
-          if [ "$SIZE" -gt 1500000 ]; then
-            echo "Snapshot too large to commit; artifact only"
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add backend/data/catalog-snapshot.json
+          git add backend/data/m6a-cards.json backend/data/catalog-snapshot.json
           if git diff --cached --quiet; then
-            echo "No snapshot change"
+            echo "No card data change"
             exit 0
           fi
-          git commit -m "chore: refresh limited card catalog snapshot"
+          git commit -m "chore: refresh M6a Pokemon card data"
           git push

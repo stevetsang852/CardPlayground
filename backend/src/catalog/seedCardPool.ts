@@ -2,6 +2,7 @@ import { collections } from '../config/database';
 import { JP_HIT_AS_APP_RARITY } from '@shared/drawing/ptcgOdds';
 import { guessRarity } from './rarityGuess';
 import { KADO_M6A_CARDS, KADO_PACKS } from './kadoSnapshot';
+import { loadDownloadedM6aCards } from './m6aCardsFile';
 
 const PACKS = [
   {
@@ -57,6 +58,18 @@ const PACKS = [
   },
 ];
 
+function catalogCards() {
+  const downloaded = loadDownloadedM6aCards();
+  const byId = new Map(downloaded.map(card => [card.id, card]));
+  const seeded = KADO_M6A_CARDS.map(card => ({
+    ...card,
+    imageUrl: byId.get(card.id)?.imageUrl || card.imageUrl,
+    name: byId.get(card.id)?.name || card.name,
+  }));
+  const seededIds = new Set(seeded.map(card => card.id));
+  return [...seeded, ...downloaded.filter(card => !seededIds.has(card.id))];
+}
+
 export async function seedCardPool(): Promise<{ packs: number; templates: number }> {
   for (const pack of [...PACKS, ...KADO_PACKS]) {
     await collections.packConfigurations().doc(pack.id).set({
@@ -68,13 +81,13 @@ export async function seedCardPool(): Promise<{ packs: number; templates: number
   }
 
   let added = 0;
-  for (const card of KADO_M6A_CARDS) {
+  for (const card of catalogCards()) {
     const rarity = guessRarity(card.name, card.number);
     const existing = await collections.cardTemplates().doc(card.id).get();
     if (existing.exists) {
       const data = existing.data() || {};
-      if (!data.imageUrl && card.imageUrl) {
-        await collections.cardTemplates().doc(card.id).set({ ...data, imageUrl: card.imageUrl });
+      if ((!data.imageUrl || data.imageUrl.includes('official-artwork')) && card.imageUrl) {
+        await collections.cardTemplates().doc(card.id).set({ ...data, imageUrl: card.imageUrl, name: card.name });
       }
       continue;
     }
