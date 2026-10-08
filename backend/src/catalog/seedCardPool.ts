@@ -4,16 +4,25 @@ import { guessRarity } from './rarityGuess';
 import { KADO_M6A_CARDS, KADO_PACKS } from './kadoSnapshot';
 import { loadDownloadedM6aCards } from './m6aCardsFile';
 
+const PACK_ART = {
+  booster: 'https://asia.pokemon-card.com/hk/archive/special/card/m6a/images/locale/hk/m6a_pillow_4f272152.webp',
+  partners: 'https://asia.pokemon-card.com/hk/archive/special/card/m6a/images/locale/hk/others/special-deck_e24e2df6.webp',
+  special: 'https://asia.pokemon-card.com/hk/archive/special/card/m6a/images/locale/hk/others/special-set_c5d9d762.webp',
+};
+
 const PACKS = [
   {
-    id: 'basic',
+    id: 'm6a',
     type: 'basic',
-    name: 'JP Expansion Pack',
-    cost: 100,
+    name: '擴充包「30th CELEBRATION」',
+    imageUrl: PACK_ART.booster,
+    setCode: 'M6a',
+    cost: 25,
     currencyType: 'soft',
     model: 'jp-sv-5',
-    cardsPerPack: 5,
-    packsPerBox: 30,
+    cardsPerPack: 6,
+    packsIncluded: 1,
+    packsPerBox: 20,
     probabilities: {
       legendary: JP_HIT_AS_APP_RARITY.legendary,
       epic: JP_HIT_AS_APP_RARITY.epic,
@@ -23,14 +32,17 @@ const PACKS = [
     guaranteedLegendaryAfter: 150,
   },
   {
-    id: 'premium',
+    id: 'm6a-first-partners',
     type: 'premium',
-    name: 'JP High Class Pack',
-    cost: 500,
+    name: '特別卡組「最初的夥伴」',
+    imageUrl: PACK_ART.partners,
+    setCode: 'M6a',
+    cost: 135,
     currencyType: 'soft',
     model: 'jp-sv-5',
-    cardsPerPack: 5,
-    packsPerBox: 10,
+    cardsPerPack: 6,
+    packsIncluded: 4,
+    packsPerBox: 1,
     probabilities: {
       legendary: 0.02,
       epic: 0.35,
@@ -40,21 +52,24 @@ const PACKS = [
     guaranteedLegendaryAfter: 80,
   },
   {
-    id: 'legendary',
+    id: 'm6a-special',
     type: 'legendary',
-    name: 'God Pack Demo',
-    cost: 2000,
+    name: '特別組合 仙子伊布ex／甲賀忍蛙ex',
+    imageUrl: PACK_ART.special,
+    setCode: 'M6a',
+    cost: 145,
     currencyType: 'soft',
     model: 'jp-sv-5',
-    cardsPerPack: 5,
+    cardsPerPack: 6,
+    packsIncluded: 5,
     packsPerBox: 1,
     probabilities: {
-      legendary: 0.15,
-      epic: 0.55,
-      rare: 0.30,
+      legendary: 0.04,
+      epic: 0.4,
+      rare: 0.56,
       common: 0,
     },
-    guaranteedLegendaryAfter: 10,
+    guaranteedLegendaryAfter: 80,
   },
 ];
 

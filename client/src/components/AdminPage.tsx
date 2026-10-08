@@ -26,9 +26,12 @@ function blankPack(packs: PackConfig[]): PackConfig {
     id: `pack-${packs.length + 1}`,
     name: '',
     icon: '🃏',
-    cost: 100,
+    imageUrl: '',
+    setCode: 'M6a',
+    cost: 25,
     description: '',
-    cardsPerPack: 5,
+    cardsPerPack: 6,
+    packsIncluded: 1,
     pityLegendaryAt: 150,
     model: 'jp-sv-5',
   };
@@ -254,8 +257,11 @@ export function AdminPage() {
               <label className="text-xs text-purple-300">{t('admin.name')}
                 <input value={packDraft.name} onChange={(event) => setPackDraft({ ...packDraft, name: event.target.value })} className={field} />
               </label>
-              <label className="text-xs text-purple-300">{t('admin.icon')}
-                <input value={packDraft.icon} onChange={(event) => setPackDraft({ ...packDraft, icon: event.target.value })} className={field} />
+              <label className="text-xs text-purple-300 sm:col-span-2">{t('admin.imageUrl')}
+                <input value={packDraft.imageUrl} onChange={(event) => setPackDraft({ ...packDraft, imageUrl: event.target.value })} className={field} />
+              </label>
+              <label className="text-xs text-purple-300">{t('admin.included')}
+                <input type="number" value={packDraft.packsIncluded} onChange={(event) => setPackDraft({ ...packDraft, packsIncluded: Number(event.target.value) })} className={field} />
               </label>
               <label className="text-xs text-purple-300">{t('admin.cost')}
                 <input type="number" value={packDraft.cost} onChange={(event) => setPackDraft({ ...packDraft, cost: Number(event.target.value) })} className={field} />
@@ -278,7 +284,11 @@ export function AdminPage() {
           <ul className="space-y-2">
             {catalog.packs.map((pack) => (
               <li key={pack.id} className="flex items-center gap-3 rounded-xl border border-game-border bg-game-surface p-3">
-                <span className="text-2xl">{pack.icon}</span>
+                {pack.imageUrl ? (
+                  <img src={pack.imageUrl} alt="" {...cardImageAttrs()} className="h-16 w-12 rounded object-contain bg-black/40" />
+                ) : (
+                  <span className="text-2xl">{pack.icon}</span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-white">{pack.name}</p>
                   <p className="text-xs text-purple-300">{t('admin.packMeta', { cost: pack.cost, count: pack.cardsPerPack, pity: pack.pityLegendaryAt })}</p>

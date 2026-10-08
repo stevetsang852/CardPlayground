@@ -298,36 +298,53 @@ function loadCardImage(url: string): Promise<HTMLImageElement | null> {
   });
 }
 
-function makePackMesh(icon: string): THREE.Mesh {
+function makePackMesh(icon: string, image: HTMLImageElement | null = null): THREE.Mesh {
+  const W = image ? 280 : 256;
+  const H = image ? 420 : 256;
   const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 256;
+  canvas.width = W;
+  canvas.height = H;
   const ctx = canvas.getContext('2d')!;
 
-  const grad = ctx.createRadialGradient(128, 128, 20, 128, 128, 128);
+  const grad = ctx.createRadialGradient(W / 2, H / 2, 20, W / 2, H / 2, H / 2);
   grad.addColorStop(0, '#3a1a6a');
   grad.addColorStop(1, '#0d0a1a');
   ctx.fillStyle = grad;
-  ctx.roundRect(8, 8, 240, 240, 24);
+  ctx.roundRect(8, 8, W - 16, H - 16, 24);
   ctx.fill();
+
+  if (image) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(8, 8, W - 16, H - 16, 24);
+    ctx.clip();
+    const iw = image.naturalWidth || image.width;
+    const ih = image.naturalHeight || image.height;
+    const scale = Math.max((W - 16) / iw, (H - 16) / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    ctx.drawImage(image, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    ctx.restore();
+  } else {
+    ctx.font = '140px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(icon, W / 2, H / 2);
+  }
 
   ctx.strokeStyle = '#a040ff';
   ctx.lineWidth = 6;
-  ctx.roundRect(8, 8, 240, 240, 24);
+  ctx.roundRect(8, 8, W - 16, H - 16, 24);
   ctx.stroke();
-
-  ctx.font = '140px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(icon, 128, 128);
 
   const tex = new THREE.CanvasTexture(canvas);
   const mat = new THREE.MeshStandardMaterial({
     map: tex,
     transparent: true,
     emissive: new THREE.Color(0xa040ff),
-    emissiveIntensity: 0.3,
+    emissiveIntensity: image ? 0.05 : 0.3,
   });
-  return new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), mat);
+  return new THREE.Mesh(new THREE.PlaneGeometry(image ? 1.2 : 1.4, image ? 1.8 : 1.4), mat);
 }
 
 function burstParticles(
@@ -410,10 +427,11 @@ export class PackOpenAnimation {
   play(
     packIcon: string,
     cards: DrawnCardInfo[],
-    onDone: () => void
+    onDone: () => void,
+    packImageUrl?: string,
   ): void {
     this._setup();
-    void this._run(packIcon, cards, onDone);
+    void this._run(packIcon, cards, onDone, packImageUrl);
   }
 
   private _setup(): void {
@@ -489,7 +507,7 @@ export class PackOpenAnimation {
     this.rafId = null;
   }
 
-  private async _run(packIcon: string, cards: DrawnCardInfo[], onDone: () => void): Promise<void> {
+  private async _run(packIcon: string, cards: DrawnCardInfo[], onDone: () => void, packImageUrl?: string): Promise<void> {
     const images = await Promise.all(
       cards.map((card) => (card.imageUrl ? loadCardImage(card.imageUrl) : Promise.resolve(null))),
     );
@@ -497,7 +515,8 @@ export class PackOpenAnimation {
     if (!scene) return;
 
     // ── Phase 1: Pack appears and spins ──────────────────────────────────────
-    const packMesh = makePackMesh(packIcon);
+    const packImage = packImageUrl ? await loadCardImage(packImageUrl) : null;
+    const packMesh = makePackMesh(packIcon, packImage);
     packMesh.scale.set(0, 0, 0);
     scene.add(packMesh);
 
