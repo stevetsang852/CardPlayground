@@ -9,6 +9,7 @@ import {
   type CatalogCard,
   type CatalogSnapshot,
 } from '../game/adminCatalog';
+import { useI18n } from '../i18n';
 
 type Tab = 'cards' | 'packs';
 
@@ -41,6 +42,7 @@ export function AdminPage() {
   const [packDraft, setPackDraft] = useState<PackConfig | null>(null);
   const [packOriginId, setPackOriginId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
+  const { t } = useI18n();
 
   const cards = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -53,7 +55,7 @@ export function AdminPage() {
   function commit(next: CatalogSnapshot) {
     saveCatalog(next);
     setCatalog(readCatalog());
-    setNotice('Saved in this browser. Draw uses this list.');
+    setNotice(t('admin.saved'));
   }
 
   function openCard(card: CatalogCard | null) {
@@ -67,12 +69,12 @@ export function AdminPage() {
     const name = cardDraft.name.trim();
     const imageUrl = cardDraft.imageUrl.trim();
     if (!Number.isInteger(cardDraft.id) || cardDraft.id <= 0 || !name || !imageUrl) {
-      setNotice('Card needs a positive id, a name, and an image URL.');
+      setNotice(t('admin.cardInvalid'));
       return;
     }
     const taken = catalog.cards.some((card) => card.id === cardDraft.id && card.id !== cardOriginId);
     if (taken) {
-      setNotice(`Card id ${cardDraft.id} is already used.`);
+      setNotice(t('admin.cardTaken', { id: cardDraft.id }));
       return;
     }
     const row: CatalogCard = {
@@ -109,12 +111,12 @@ export function AdminPage() {
     const id = packDraft.id.trim();
     const name = packDraft.name.trim();
     if (!id || !name || packDraft.cost < 0 || packDraft.cardsPerPack < 1) {
-      setNotice('Pack needs an id, a name, a cost, and at least 1 card.');
+      setNotice(t('admin.packInvalid'));
       return;
     }
     const taken = catalog.packs.some((pack) => pack.id === id && pack.id !== packOriginId);
     if (taken) {
-      setNotice(`Pack id ${id} is already used.`);
+      setNotice(t('admin.packTaken', { id }));
       return;
     }
     const row: PackConfig = { ...packDraft, id, name, description: packDraft.description.trim(), model: 'jp-sv-5' };
@@ -127,7 +129,7 @@ export function AdminPage() {
 
   function deletePack(id: string) {
     if (catalog.packs.length <= 1) {
-      setNotice('Keep at least one pack.');
+      setNotice(t('admin.keepPack'));
       return;
     }
     commit({ ...catalog, packs: catalog.packs.filter((pack) => pack.id !== id) });
@@ -142,18 +144,18 @@ export function AdminPage() {
     setCatalog(readCatalog());
     setCardDraft(null);
     setPackDraft(null);
-    setNotice('Restored the built-in card and pack lists.');
+    setNotice(t('admin.restored'));
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-game-accent">Admin portal</h2>
-          <p className="text-xs text-gray-400">Edit the cards and packs used by Draw. Changes stay in this browser.</p>
+          <h2 className="display text-2xl text-amber-50">{t('admin.title')}</h2>
+          <p className="text-xs text-violet-200/70">{t('admin.hint')}</p>
         </div>
-        <button type="button" onClick={restore} className="rounded-lg border border-game-border px-3 py-2 text-sm text-purple-200">
-          Restore defaults
+        <button type="button" onClick={restore} className="rounded-full border border-white/15 px-3 py-2 text-sm text-violet-100">
+          {t('admin.restore')}
         </button>
       </div>
 
@@ -165,7 +167,7 @@ export function AdminPage() {
             onClick={() => setTab(item)}
             className={`rounded-lg px-4 py-2 text-sm font-bold ${tab === item ? 'bg-purple-700 text-white' : 'bg-game-surface text-purple-200 border border-game-border'}`}
           >
-            {item === 'cards' ? `Cards (${catalog.cards.length})` : `Packs (${catalog.packs.length})`}
+            {item === 'cards' ? t('admin.cards', { n: catalog.cards.length }) : t('admin.packs', { n: catalog.packs.length })}
           </button>
         ))}
       </div>
@@ -175,9 +177,9 @@ export function AdminPage() {
       {tab === 'cards' && (
         <section className="space-y-3">
           <div className="flex gap-2">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, id, rarity" className={field} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('admin.search')} className={field} />
             <button type="button" onClick={() => openCard(null)} className="shrink-0 rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white">
-              Add card
+              {t('admin.addCard')}
             </button>
           </div>
 
@@ -189,29 +191,29 @@ export function AdminPage() {
                 saveCard();
               }}
             >
-              <label className="text-xs text-purple-300">Id
+              <label className="text-xs text-purple-300">{t('admin.id')}
                 <input type="number" value={cardDraft.id} onChange={(event) => setCardDraft({ ...cardDraft, id: Number(event.target.value) })} className={field} />
               </label>
-              <label className="text-xs text-purple-300">Name
+              <label className="text-xs text-purple-300">{t('admin.name')}
                 <input value={cardDraft.name} onChange={(event) => setCardDraft({ ...cardDraft, name: event.target.value })} className={field} />
               </label>
-              <label className="text-xs text-purple-300">Rarity
+              <label className="text-xs text-purple-300">{t('admin.rarity')}
                 <select value={cardDraft.rarity} onChange={(event) => setCardDraft({ ...cardDraft, rarity: event.target.value as Rarity })} className={field}>
-                  {RARITIES.map((rarity) => <option key={rarity} value={rarity}>{rarity}</option>)}
+                  {RARITIES.map((rarity) => <option key={rarity} value={rarity}>{t(`rarity.${rarity}`)}</option>)}
                 </select>
               </label>
-              <label className="text-xs text-purple-300">Dex
+              <label className="text-xs text-purple-300">{t('admin.dex')}
                 <input type="number" value={cardDraft.dex} onChange={(event) => setCardDraft({ ...cardDraft, dex: Number(event.target.value) })} className={field} />
               </label>
-              <label className="text-xs text-purple-300 sm:col-span-2">Image URL
+              <label className="text-xs text-purple-300 sm:col-span-2">{t('admin.image')}
                 <input value={cardDraft.imageUrl} onChange={(event) => setCardDraft({ ...cardDraft, imageUrl: event.target.value })} className={field} />
               </label>
-              <label className="text-xs text-purple-300 sm:col-span-2">Series
+              <label className="text-xs text-purple-300 sm:col-span-2">{t('admin.series')}
                 <input value={cardDraft.series} onChange={(event) => setCardDraft({ ...cardDraft, series: event.target.value })} className={field} />
               </label>
               <div className="flex gap-2 sm:col-span-2">
-                <button type="submit" className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white">Save card</button>
-                <button type="button" onClick={() => setCardDraft(null)} className="rounded-lg border border-game-border px-4 py-2 text-sm text-purple-200">Cancel</button>
+                <button type="submit" className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white">{t('admin.saveCard')}</button>
+                <button type="button" onClick={() => setCardDraft(null)} className="rounded-lg border border-game-border px-4 py-2 text-sm text-purple-200">{t('admin.cancel')}</button>
               </div>
             </form>
           )}
@@ -222,10 +224,10 @@ export function AdminPage() {
                 <img src={card.imageUrl} alt="" className="h-16 w-12 rounded object-cover bg-black/40" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-white">{card.name}</p>
-                  <p className="text-xs text-purple-300">#{card.id} · {card.rarity} · dex {card.dex}</p>
+                  <p className="text-xs text-purple-300">{t('admin.meta', { id: card.id, rarity: t(`rarity.${card.rarity}`), dex: card.dex })}</p>
                 </div>
-                <button type="button" onClick={() => openCard(card)} className="text-sm text-game-accent">Edit</button>
-                <button type="button" onClick={() => deleteCard(card.id)} className="text-sm text-pink-300">Delete</button>
+                <button type="button" onClick={() => openCard(card)} className="text-sm text-game-accent">{t('admin.edit')}</button>
+                <button type="button" onClick={() => deleteCard(card.id)} className="text-sm text-pink-300">{t('admin.delete')}</button>
               </li>
             ))}
           </ul>
@@ -235,7 +237,7 @@ export function AdminPage() {
       {tab === 'packs' && (
         <section className="space-y-3">
           <button type="button" onClick={() => openPack(null)} className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white">
-            Add pack
+            {t('admin.addPack')}
           </button>
           {packDraft && (
             <form
@@ -245,30 +247,30 @@ export function AdminPage() {
                 savePack();
               }}
             >
-              <label className="text-xs text-purple-300">Id
+              <label className="text-xs text-purple-300">{t('admin.id')}
                 <input value={packDraft.id} onChange={(event) => setPackDraft({ ...packDraft, id: event.target.value })} className={field} />
               </label>
-              <label className="text-xs text-purple-300">Name
+              <label className="text-xs text-purple-300">{t('admin.name')}
                 <input value={packDraft.name} onChange={(event) => setPackDraft({ ...packDraft, name: event.target.value })} className={field} />
               </label>
-              <label className="text-xs text-purple-300">Icon
+              <label className="text-xs text-purple-300">{t('admin.icon')}
                 <input value={packDraft.icon} onChange={(event) => setPackDraft({ ...packDraft, icon: event.target.value })} className={field} />
               </label>
-              <label className="text-xs text-purple-300">Cost
+              <label className="text-xs text-purple-300">{t('admin.cost')}
                 <input type="number" value={packDraft.cost} onChange={(event) => setPackDraft({ ...packDraft, cost: Number(event.target.value) })} className={field} />
               </label>
-              <label className="text-xs text-purple-300">Cards per pack
+              <label className="text-xs text-purple-300">{t('admin.perPack')}
                 <input type="number" value={packDraft.cardsPerPack} onChange={(event) => setPackDraft({ ...packDraft, cardsPerPack: Number(event.target.value) })} className={field} />
               </label>
-              <label className="text-xs text-purple-300">Pity (packs)
+              <label className="text-xs text-purple-300">{t('admin.pity')}
                 <input type="number" value={packDraft.pityLegendaryAt} onChange={(event) => setPackDraft({ ...packDraft, pityLegendaryAt: Number(event.target.value) })} className={field} />
               </label>
-              <label className="text-xs text-purple-300 sm:col-span-2">Description
+              <label className="text-xs text-purple-300 sm:col-span-2">{t('admin.description')}
                 <input value={packDraft.description} onChange={(event) => setPackDraft({ ...packDraft, description: event.target.value })} className={field} />
               </label>
               <div className="flex gap-2 sm:col-span-2">
-                <button type="submit" className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white">Save pack</button>
-                <button type="button" onClick={() => setPackDraft(null)} className="rounded-lg border border-game-border px-4 py-2 text-sm text-purple-200">Cancel</button>
+                <button type="submit" className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white">{t('admin.savePack')}</button>
+                <button type="button" onClick={() => setPackDraft(null)} className="rounded-lg border border-game-border px-4 py-2 text-sm text-purple-200">{t('admin.cancel')}</button>
               </div>
             </form>
           )}
@@ -278,10 +280,10 @@ export function AdminPage() {
                 <span className="text-2xl">{pack.icon}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-white">{pack.name}</p>
-                  <p className="text-xs text-purple-300">{pack.cost} coins · {pack.cardsPerPack} cards · pity {pack.pityLegendaryAt}</p>
+                  <p className="text-xs text-purple-300">{t('admin.packMeta', { cost: pack.cost, count: pack.cardsPerPack, pity: pack.pityLegendaryAt })}</p>
                 </div>
-                <button type="button" onClick={() => openPack(pack)} className="text-sm text-game-accent">Edit</button>
-                <button type="button" onClick={() => deletePack(pack.id)} className="text-sm text-pink-300">Delete</button>
+                <button type="button" onClick={() => openPack(pack)} className="text-sm text-game-accent">{t('admin.edit')}</button>
+                <button type="button" onClick={() => deletePack(pack.id)} className="text-sm text-pink-300">{t('admin.delete')}</button>
               </li>
             ))}
           </ul>

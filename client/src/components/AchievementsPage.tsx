@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { ACHIEVEMENT_DEFINITIONS, getAllAchievementProgress } from '../game/AchievementService';
 import type { IAchievementProgress } from '../db';
+import { useI18n } from '../i18n';
 
 function ProgressBar({ current, target }: { current: number; target: number }) {
   const pct = Math.min(100, Math.round((current / target) * 100));
@@ -66,6 +67,7 @@ function AchievementCard({ name, description, target, reward, progress }: Achiev
 
 export function AchievementsPage() {
   const { player, cards, achievements } = useGameStore();
+  const { t } = useI18n();
 
   const allProgress = useMemo(
     () => getAllAchievementProgress(player, cards, achievements),
@@ -96,10 +98,10 @@ export function AchievementsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-game-accent">🏆 Achievements</h2>
+        <h2 className="display text-2xl text-amber-50">{t('achieve.title')}</h2>
         <div className="text-right">
           <div className="text-yellow-300 font-bold text-sm">
-            {unlockedCount} / {ACHIEVEMENT_DEFINITIONS.length} unlocked
+            {t('achieve.count', { done: unlockedCount, total: ACHIEVEMENT_DEFINITIONS.length })}
           </div>
           <div className="text-game-gold text-xs">🪙 {totalRewardsEarned.toLocaleString()} earned</div>
         </div>

@@ -10,6 +10,7 @@ import {
 import { CARD_TEMPLATES, type Rarity } from '../cardData';
 import type { ICardInstance } from '../db';
 import { SynthesisEffect, type CardInfo } from '../animations';
+import { useI18n } from '../i18n';
 
 const RARITY_STYLES: Record<Rarity, { border: string; bg: string; text: string; label: string; ring: string }> = {
   common:    { border: 'border-gray-500',   bg: 'bg-gray-800/60',    text: 'text-gray-300',   label: 'Common',    ring: 'ring-gray-500' },
@@ -54,6 +55,7 @@ function CardItem({
 export function SynthesisPage() {
   const { player, cards, activeEvents, removeCard, addCards, setPlayer, incrementActionCount } =
     useGameStore();
+  const { t } = useI18n();
 
   const [selectedRecipe, setSelectedRecipe] = useState<SynthesisRecipe>(SYNTHESIS_RECIPES[0]!);
   const [selectedCardIds, setSelectedCardIds] = useState<number[]>([]);
@@ -295,11 +297,11 @@ export function SynthesisPage() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold text-game-accent">⚗️ Card Synthesis</h2>
+      <h2 className="display text-2xl text-amber-50">{t('synth.title')}</h2>
 
       {/* Balance */}
       <div className="bg-game-surface border border-game-border rounded-xl p-4 flex items-center justify-between">
-        <span className="text-purple-400 text-sm">Balance</span>
+        <span className="text-sm text-violet-200/70">{t('synth.balance')}</span>
         <span className="text-game-gold font-bold">🪙 {player.softCurrency.toLocaleString()}</span>
       </div>
 

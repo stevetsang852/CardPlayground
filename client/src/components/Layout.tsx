@@ -1,58 +1,68 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import type { Page } from '../App';
 import { useGameStore } from '../store';
+import { useI18n } from '../i18n';
 
 interface LayoutProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-const NAV_ITEMS: { page: Page; label: string; icon: string }[] = [
-  { page: 'home',         label: 'Home',        icon: '🏠' },
-  { page: 'draw',         label: 'Draw',        icon: '🎴' },
-  { page: 'synthesis',    label: 'Synthesis',   icon: '⚗️' },
-  { page: 'inventory',    label: 'Inventory',   icon: '🃏' },
-  { page: 'battle',       label: '防御战',      icon: '⚔️' },
-  { page: 'shop',         label: 'Shop',        icon: '🛒' },
-  { page: 'achievements', label: 'Achievements',icon: '🏆' },
-  { page: 'settings',     label: 'Settings',    icon: '⚙️' },
-  { page: 'admin',        label: 'Admin',       icon: '🛠️' },
+const NAV_ITEMS: { page: Page; key: string; icon: string }[] = [
+  { page: 'home', key: 'nav.home', icon: '⌂' },
+  { page: 'draw', key: 'nav.draw', icon: '✦' },
+  { page: 'synthesis', key: 'nav.synthesis', icon: '⚗' },
+  { page: 'inventory', key: 'nav.inventory', icon: '▤' },
+  { page: 'battle', key: 'nav.battle', icon: '⚔' },
+  { page: 'shop', key: 'nav.shop', icon: '◈' },
+  { page: 'achievements', key: 'nav.achievements', icon: '★' },
+  { page: 'settings', key: 'nav.settings', icon: '⚙' },
+  { page: 'admin', key: 'nav.admin', icon: '✎' },
 ];
 
 export function Layout({ currentPage, onNavigate, children }: LayoutProps) {
   const { player } = useGameStore();
+  const { locale, setLocale, t } = useI18n();
 
   return (
-    <div className="min-h-screen bg-game-bg flex flex-col">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-purple-950 to-blue-950 border-b border-game-border px-4 py-3 flex items-center justify-between">
-        <h1 className="text-game-accent text-lg font-bold tracking-widest uppercase">✨ Card Mystery Realm</h1>
-        <div className="flex gap-4 text-sm">
-          <span className="text-game-gold font-bold">🪙 {player.softCurrency.toLocaleString()}</span>
-          <span className="text-purple-300">🍀 {player.luckValue}</span>
+    <div className="min-h-screen flex flex-col">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#10081f]/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center gap-3 px-3 py-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-300 to-amber-200 text-lg text-violet-950 shadow-lg shadow-violet-950/50">✦</div>
+          <div className="min-w-0 flex-1">
+            <h1 className="display truncate text-lg leading-tight text-amber-50">{t('app.title')}</h1>
+            <p className="truncate text-[11px] tracking-wide text-violet-200/70">{t('app.tagline')}</p>
+          </div>
+          <div className="text-right text-xs leading-4">
+            <div className="font-semibold text-amber-300">{player.softCurrency.toLocaleString()}</div>
+            <div className="text-violet-200/80">🍀 {player.luckValue}</div>
+          </div>
+          <div className="flex rounded-full border border-white/15 bg-black/30 p-0.5 text-[11px] font-semibold">
+            <button type="button" onClick={() => setLocale('zh-Hant')} className={`rounded-full px-2 py-1 ${locale === 'zh-Hant' ? 'bg-amber-100 text-violet-950' : 'text-violet-200'}`}>繁</button>
+            <button type="button" onClick={() => setLocale('en')} className={`rounded-full px-2 py-1 ${locale === 'en' ? 'bg-amber-100 text-violet-950' : 'text-violet-200'}`}>EN</button>
+          </div>
         </div>
+        <nav className="mx-auto grid max-w-5xl grid-cols-5 gap-1 px-2 pb-2 sm:grid-cols-9">
+          {NAV_ITEMS.map(({ page, key, icon }) => {
+            const active = currentPage === page;
+            return (
+              <button
+                key={page}
+                type="button"
+                onClick={() => onNavigate(page)}
+                className={`flex min-h-11 flex-col items-center justify-center rounded-xl px-1 py-1.5 text-[11px] leading-tight ${
+                  active ? 'bg-white/10 text-amber-100 ring-1 ring-amber-200/40' : 'text-violet-200/80'
+                }`}
+              >
+                <span className="text-sm">{icon}</span>
+                {t(key)}
+              </button>
+            );
+          })}
+        </nav>
       </header>
-
-      {/* Navigation */}
-      <nav className="bg-purple-950/50 border-b border-game-border px-2 py-1 flex gap-1 overflow-x-auto">
-        {NAV_ITEMS.map(({ page, label, icon }) => (
-          <button
-            key={page}
-            onClick={() => onNavigate(page)}
-            className={`px-3 py-2 rounded text-sm whitespace-nowrap transition-colors ${
-              currentPage === page
-                ? 'bg-purple-800 text-game-accent border border-purple-600'
-                : 'text-purple-300 hover:bg-purple-900 hover:text-white'
-            }`}
-          >
-            {icon} {label}
-          </button>
-        ))}
-      </nav>
-
-      {/* Main content */}
-      <main className="flex-1 p-4 max-w-5xl mx-auto w-full">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-3 py-4">
         {children}
       </main>
     </div>

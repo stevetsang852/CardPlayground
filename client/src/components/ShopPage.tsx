@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { refreshDailyShop, purchaseItem } from '../game/SystemShop';
 import { CARD_TEMPLATES, type Rarity } from '../cardData';
 import type { IMarketListing } from '../db';
+import { useI18n } from '../i18n';
 
 const RARITY_STYLES: Record<Rarity, { border: string; bg: string; text: string; badge: string; label: string }> = {
   common:    { border: 'border-gray-500',   bg: 'bg-gray-800/60',    text: 'text-gray-300',   badge: 'bg-gray-700 text-gray-300',     label: 'Common' },
@@ -84,6 +85,7 @@ function ListingCard({ listing, onPurchase, canAfford, isPurchasing }: ListingCa
 export function ShopPage() {
   const store = useGameStore();
   const { player, cards, marketListings, lastShopRefreshDate } = store;
+  const { t } = useI18n();
   const [purchasingId, setPurchasingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const countdown = useCountdownToMidnight();
@@ -133,10 +135,10 @@ export function ShopPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-game-accent">🛒 Daily Shop</h2>
+        <h2 className="display text-2xl text-amber-50">{t('shop.title')}</h2>
         <div className="text-right">
           <div className="text-game-gold font-bold text-sm">🪙 {player.softCurrency.toLocaleString()}</div>
-          <div className="text-gray-500 text-xs">Refreshes in {countdown}</div>
+          <div className="text-xs text-gray-500">{t('shop.refresh', { time: countdown })}</div>
         </div>
       </div>
 

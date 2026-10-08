@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { LocaleProvider } from './i18n';
 import './index.css';
 import './card-effects.css';
 import './vendor/pokemon-cards-css/index.css';
@@ -12,6 +13,8 @@ if (!root) throw new Error('Root element not found');
 
 createRoot(root).render(
   <React.StrictMode>
-    <App />
+    <LocaleProvider>
+      <App />
+    </LocaleProvider>
   </React.StrictMode>
 );

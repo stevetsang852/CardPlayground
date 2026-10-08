@@ -3,6 +3,7 @@ import { useGameStore } from '../store';
 import { getSeasonProgress } from '../game/SeasonService';
 import { CurrencyDisplay } from './CurrencyDisplay';
 import type { Page } from '../App';
+import { useI18n } from '../i18n';
 
 interface HomePageProps {
   onNavigate: (page: Page) => void;
@@ -10,96 +11,81 @@ interface HomePageProps {
 
 export function HomePage({ onNavigate }: HomePageProps) {
   const { player, cards, activeEvents, seasonMissions } = useGameStore();
+  const { t } = useI18n();
   const seasonProgress = getSeasonProgress(seasonMissions);
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-game-accent">✨ Card Mystery Realm</h2>
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: t('home.currency'), value: <CurrencyDisplay amount={player.softCurrency} /> },
+          { label: t('home.luck'), value: <span className="font-semibold text-amber-300">🍀 {player.luckValue}</span> },
+          { label: t('home.draws'), value: <span className="font-semibold text-white">{player.totalDraws}</span> },
+          { label: t('home.collection'), value: <span className="font-semibold text-white">{t('home.collectionCount', { n: cards.length })}</span> },
+        ].map((item) => (
+          <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+            <div className="text-[11px] uppercase tracking-wide text-violet-200/70">{item.label}</div>
+            <div className="mt-1 text-sm">{item.value}</div>
+          </div>
+        ))}
+      </section>
 
-      {/* Player stats */}
-      <div className="bg-game-surface border border-game-border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div>
-          <div className="text-purple-400 text-xs mb-1">Soft Currency</div>
-          <CurrencyDisplay amount={player.softCurrency} />
-        </div>
-        <div>
-          <div className="text-purple-400 text-xs mb-1">Luck Value</div>
-          <div className="text-game-gold font-bold">🍀 {player.luckValue}</div>
-        </div>
-        <div>
-          <div className="text-purple-400 text-xs mb-1">Total Draws</div>
-          <div className="text-white font-bold">{player.totalDraws}</div>
-        </div>
-        <div>
-          <div className="text-purple-400 text-xs mb-1">Collection</div>
-          <div className="text-white font-bold">{cards.length} cards</div>
-        </div>
-      </div>
-
-      {/* Active events */}
       {activeEvents.length > 0 && (
-        <div className="bg-yellow-950/50 border border-yellow-700 rounded-xl p-3">
-          <div className="text-yellow-400 text-sm font-bold mb-2">⚡ Active Events</div>
+        <div className="rounded-2xl border border-amber-300/30 bg-amber-950/40 p-3">
+          <div className="mb-2 text-sm font-semibold text-amber-200">{t('home.events')}</div>
           <div className="flex flex-wrap gap-2">
             {activeEvents.map(event => (
-              <div key={event.id} className="bg-yellow-900/50 border border-yellow-700 rounded px-3 py-1 text-xs">
-                <span className="text-yellow-300 font-bold">
-                  {event.type === 'lucky' ? '🍀 Lucky Moment' :
-                   event.type === 'double_drop' ? '✨ Double Drop' :
-                   '⚗️ Synthesis Boost'}
-                </span>
-                <span className="text-yellow-500 ml-2">{event.remainingActions} actions left</span>
+              <div key={event.id} className="rounded-full border border-amber-200/20 px-3 py-1 text-xs text-amber-100">
+                {t(`home.event.${event.type}`)}
+                <span className="ml-2 text-amber-200/70">{t('home.actionsLeft', { n: event.remainingActions })}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Season progress */}
-      <div className="bg-game-surface border border-game-border rounded-xl p-4">
-        <div className="text-purple-400 text-sm mb-2">📅 Season Progress</div>
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="mb-2 text-sm text-violet-100">{t('home.season')}</div>
         <div className="flex items-center gap-3">
-          <div className="flex-1 bg-purple-950 rounded-full h-2">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-violet-950">
             <div
-              className="bg-purple-500 h-2 rounded-full transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-violet-400 to-amber-300"
               style={{ width: `${Math.min((seasonProgress.completedMissions / Math.max(seasonProgress.nextMilestoneAt, 1)) * 100, 100)}%` }}
             />
           </div>
-          <span className="text-purple-300 text-xs whitespace-nowrap">
-            {seasonProgress.completedMissions} / {seasonProgress.nextMilestoneAt} missions
+          <span className="whitespace-nowrap text-xs text-violet-200">
+            {t('home.missions', { done: seasonProgress.completedMissions, total: seasonProgress.nextMilestoneAt })}
           </span>
         </div>
-        <div className="text-yellow-400 text-xs mt-1">
-          Next reward: 🪙 {seasonProgress.nextMilestoneReward.toLocaleString()}
+        <div className="mt-2 text-xs text-amber-200">
+          {t('home.nextReward', { n: seasonProgress.nextMilestoneReward.toLocaleString() })}
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {[
-          { page: 'draw' as Page,         icon: '🎴', label: 'Draw Cards',    color: 'from-purple-800 to-purple-700' },
-          { page: 'synthesis' as Page,    icon: '⚗️', label: 'Synthesis',     color: 'from-blue-800 to-blue-700' },
-          { page: 'battle' as Page,       icon: '⚔️', label: 'Defense Battle',color: 'from-red-800 to-red-700' },
-          { page: 'shop' as Page,         icon: '🛒', label: 'System Shop',   color: 'from-green-800 to-green-700' },
-          { page: 'achievements' as Page, icon: '🏆', label: 'Achievements',  color: 'from-yellow-800 to-yellow-700' },
-          { page: 'settings' as Page,     icon: '⚙️', label: 'Settings',      color: 'from-gray-800 to-gray-700' },
-        ].map(({ page, icon, label, color }) => (
+          { page: 'draw' as Page, label: t('home.draw') },
+          { page: 'synthesis' as Page, label: t('home.synthesis') },
+          { page: 'battle' as Page, label: t('home.battle') },
+          { page: 'shop' as Page, label: t('home.shop') },
+          { page: 'achievements' as Page, label: t('home.achievements') },
+          { page: 'settings' as Page, label: t('home.settings') },
+        ].map(({ page, label }) => (
           <button
             key={page}
             onClick={() => onNavigate(page)}
-            className={`bg-gradient-to-br ${color} hover:brightness-110 rounded-xl p-4 text-center transition-all`}
+            className="rounded-2xl border border-white/10 bg-gradient-to-br from-violet-900/80 to-violet-950/40 px-3 py-4 text-left text-sm font-medium text-amber-50"
           >
-            <div className="text-2xl mb-1">{icon}</div>
-            <div className="text-white text-sm font-medium">{label}</div>
+            {label}
           </button>
         ))}
       </div>
 
-      {/* Pity info */}
-      <div className="bg-game-surface border border-game-border rounded-xl p-3 text-xs text-purple-400">
-        <span className="mr-4">⚔️ Legendary pity: {player.drawsSinceLastLegendary} draws</span>
-        <span>✨ Mythic pity: {player.drawsSinceLastMythic} draws</span>
-      </div>
+      <p className="text-xs text-violet-200/70">
+        {t('home.legendPity', { n: player.drawsSinceLastLegendary })}
+        <span className="mx-2">·</span>
+        {t('home.mythicPity', { n: player.drawsSinceLastMythic })}
+      </p>
     </div>
   );
 }

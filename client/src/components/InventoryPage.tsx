@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import type { Rarity } from '../cardData';
 import { PTCG_TEMPLATES, findPtcgTemplate } from '../game/ptcgPool';
 import type { ICardInstance } from '../db/CardGameDB';
+import { useI18n } from '../i18n';
 
 type Tab = 'inventory' | 'catalog';
 type SortKey = 'obtained' | 'rarity' | 'name';
@@ -41,6 +42,7 @@ export function InventoryPage() {
   const [filterRarity, setFilterRarity] = useState<Rarity | 'all'>('all');
   const [search, setSearch] = useState('');
   const [detailCardId, setDetailCardId] = useState<number | null>(null);
+  const { t: tr } = useI18n();
 
   const instancesByCardId = useMemo(() => {
     const map = new Map<number, ICardInstance[]>();
@@ -76,31 +78,31 @@ export function InventoryPage() {
   const detail = detailCardId !== null ? findPtcgTemplate(detailCardId) : undefined;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 pb-8">
-      <div className="px-4 pt-6 pb-3">
-        <h1 className="text-2xl font-bold text-game-accent mb-1">Collection</h1>
-        <p className="text-sm text-gray-400">{instancesByCardId.size} / {PTCG_TEMPLATES.length} M6a Pokemon</p>
+    <div className="pb-4 text-gray-100">
+      <div className="pb-3">
+        <h1 className="display mb-1 text-2xl text-amber-50">{tr('inv.title')}</h1>
+        <p className="text-sm text-violet-200/70">{tr('inv.count', { owned: instancesByCardId.size, total: PTCG_TEMPLATES.length })}</p>
       </div>
-      <div className="flex border-b border-gray-800 px-4 mb-4">
-        {(['inventory', 'catalog'] as Tab[]).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 text-sm font-semibold capitalize border-b-2 -mb-px ${
-            tab === t ? 'border-game-accent text-game-accent' : 'border-transparent text-gray-500'
-          }`}>{t}</button>
+      <div className="mb-4 flex border-b border-white/10">
+        {(['inventory', 'catalog'] as Tab[]).map((tabName) => (
+          <button key={tabName} onClick={() => setTab(tabName)} className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold ${
+            tab === tabName ? 'border-amber-200 text-amber-100' : 'border-transparent text-gray-500'
+          }`}>{tr(tabName === 'inventory' ? 'inv.inventory' : 'inv.catalog')}</button>
         ))}
       </div>
-      <div className="px-4 flex flex-wrap gap-2 mb-4">
-        <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm w-36" />
-        <select value={filterRarity} onChange={(e) => setFilterRarity(e.target.value as Rarity | 'all')} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm">
-          <option value="all">All rarities</option>
-          {(['common', 'rare', 'epic', 'legendary'] as Rarity[]).map((r) => <option key={r} value={r}>{r}</option>)}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input type="text" placeholder={tr('inv.search')} value={search} onChange={(e) => setSearch(e.target.value)} className="w-36 rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-sm" />
+        <select value={filterRarity} onChange={(e) => setFilterRarity(e.target.value as Rarity | 'all')} className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-sm">
+          <option value="all">{tr('inv.all')}</option>
+          {(['common', 'rare', 'epic', 'legendary'] as Rarity[]).map((r) => <option key={r} value={r}>{tr(`rarity.${r}`)}</option>)}
         </select>
-        <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm">
-          <option value="obtained">Recent</option>
-          <option value="rarity">Rarity</option>
-          <option value="name">Name</option>
+        <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-sm">
+          <option value="obtained">{tr('inv.recent')}</option>
+          <option value="rarity">{tr('inv.rarity')}</option>
+          <option value="name">{tr('inv.name')}</option>
         </select>
       </div>
-      <div className="px-4 flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3">
         {(tab === 'inventory' ? inventoryCards : filtered).map((template) => (
           <CardFace key={template.id} cardId={template.id} rarity={template.rarity} count={instancesByCardId.get(template.id)?.length} onClick={() => setDetailCardId(template.id)} extraClass={instancesByCardId.has(template.id) ? '' : 'opacity-30'} />
         ))}

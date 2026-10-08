@@ -13,6 +13,7 @@ import { SettingsPage } from './components/SettingsPage';
 import { BattlePage } from './components/battle/BattlePage';
 import { AdminPage } from './components/AdminPage';
 import { hydrateCatalog } from './game/adminCatalog';
+import { useI18n } from './i18n';
 
 hydrateCatalog();
 
@@ -21,6 +22,7 @@ export type Page = 'home' | 'draw' | 'synthesis' | 'inventory' | 'shop' | 'achie
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const { loadFromDB, isInitialized, isLoading, player, cards, achievements, setPlayer, seasonMissions } = useGameStore();
+  const { t } = useI18n();
 
   // Load data from IndexedDB on mount
   useEffect(() => {
@@ -53,7 +55,7 @@ export default function App() {
   if (isLoading || !isInitialized) {
     return (
       <div className="min-h-screen bg-game-bg flex items-center justify-center">
-        <div className="text-game-accent text-xl animate-pulse">Loading Card Mystery Realm...</div>
+        <div className="display text-xl text-amber-100 animate-pulse">{t('app.loading')}</div>
       </div>
     );
   }

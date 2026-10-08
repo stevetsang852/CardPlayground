@@ -6,6 +6,7 @@ import { findPtcgTemplate } from '../game/ptcgPool';
 import type { ICardInstance } from '../db';
 import { PackOpenAnimation, type DrawnCardInfo } from '../animations';
 import { foilForCard } from '../game/foilMap';
+import { localizedPack, useI18n } from '../i18n';
 
 const RARITY_STYLES: Record<Rarity, { text: string; label: string }> = {
   common:    { text: 'text-gray-300',   label: 'Common' },
@@ -17,7 +18,12 @@ const RARITY_STYLES: Record<Rarity, { text: string; label: string }> = {
 
 function toInfo(card: ICardInstance): DrawnCardInfo {
   const template = findPtcgTemplate(card.cardId);
-  return { icon: template?.name ?? '🃏', name: template?.name ?? `#${card.cardId}`, rarity: card.rarity };
+  return {
+    icon: template?.icon ?? '🃏',
+    name: template?.name ?? `#${card.cardId}`,
+    rarity: card.rarity,
+    imageUrl: template?.imageUrl,
+  };
 }
 
 function CardResultItem({ card }: { card: ICardInstance }) {
@@ -31,9 +37,9 @@ function CardResultItem({ card }: { card: ICardInstance }) {
         <div className="card__glare" />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 4, borderRadius: 10, overflow: 'hidden' }}>
           {template?.imageUrl ? (
-            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0e1830' }} />
+            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1, background: '#0e1830' }} />
           ) : null}
-          <span className={`relative font-bold ${style.text}`} style={{ fontSize: 8, background: 'rgba(0,0,0,0.55)', padding: '1px 4px', borderRadius: 4 }}>{template?.name ?? `#${card.cardId}`}</span>
+          <span className={`relative font-bold ${style.text}`} style={{ fontSize: 8, zIndex: 6, background: 'rgba(0,0,0,0.55)', padding: '1px 4px', borderRadius: 4 }}>{template?.name ?? `#${card.cardId}`}</span>
         </div>
       </div>
     </div>
@@ -42,6 +48,7 @@ function CardResultItem({ card }: { card: ICardInstance }) {
 
 export function DrawPage() {
   const { player, activeEvents, addCards, setPlayer, incrementActionCount } = useGameStore();
+  const { locale, t } = useI18n();
   const [selectedPack, setSelectedPack] = useState<PackConfig>(PACK_CONFIGS[0]!);
   const [lastResult, setLastResult] = useState<DrawResult | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -70,52 +77,53 @@ export function DrawPage() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold text-game-accent">Open packs</h2>
-      <p className="text-xs text-gray-400">M6a 30th CELEBRATION names + official Pokemon artwork.</p>
-      <div className="bg-game-surface border border-game-border rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
+      <h2 className="display text-2xl text-amber-50">{t('draw.title')}</h2>
+      <p className="text-xs text-violet-200/70">{t('draw.subtitle')}</p>
+      <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
         <div>
-          <div className="text-purple-400 text-xs mb-1">Balance</div>
-          <div className="text-game-gold font-bold">{player.softCurrency.toLocaleString()}</div>
+          <div className="mb-1 text-[11px] text-violet-200/70">{t('draw.balance')}</div>
+          <div className="font-semibold text-amber-300">{player.softCurrency.toLocaleString()}</div>
         </div>
         <div>
-          <div className="text-purple-400 text-xs mb-1">Packs since SAR/UR</div>
-          <div className="text-yellow-300 font-bold">{player.drawsSinceLastLegendary}</div>
+          <div className="mb-1 text-[11px] text-violet-200/70">{t('draw.since')}</div>
+          <div className="font-semibold text-amber-100">{player.drawsSinceLastLegendary}</div>
         </div>
         <div>
-          <div className="text-purple-400 text-xs mb-1">Pity at</div>
-          <div className="text-pink-300 font-bold">{selectedPack.pityLegendaryAt} packs</div>
+          <div className="mb-1 text-[11px] text-violet-200/70">{t('draw.pity')}</div>
+          <div className="font-semibold text-pink-200">{t('draw.pityPacks', { n: selectedPack.pityLegendaryAt })}</div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {PACK_CONFIGS.map(pack => {
           const isSelected = selectedPack.id === pack.id;
+          const label = localizedPack(locale, pack);
           return (
-            <button key={pack.id} onClick={() => setSelectedPack(pack)} className={`rounded-xl border p-4 text-left ${isSelected ? 'border-purple-400 bg-purple-900/50' : 'border-game-border bg-game-surface'}`}>
-              <div className="text-2xl mb-1">{pack.icon}</div>
-              <div className="font-bold text-white text-sm">{pack.name}</div>
-              <div className="text-game-gold text-sm">{pack.cost}</div>
-              <div className="text-gray-400 text-xs mt-1">{pack.description}</div>
+            <button key={pack.id} onClick={() => setSelectedPack(pack)} className={`rounded-2xl border p-4 text-left ${isSelected ? 'border-amber-200/70 bg-violet-900/50' : 'border-white/10 bg-white/5'}`}>
+              <div className="mb-1 text-xl">{pack.icon}</div>
+              <div className="text-sm font-semibold text-white">{label.name}</div>
+              <div className="text-sm text-amber-300">{pack.cost}</div>
+              <div className="mt-1 text-xs text-violet-200/70">{label.description}</div>
             </button>
           );
         })}
       </div>
 
-      <div className="flex gap-3">
-        <button onClick={() => handleDraw(1)} disabled={!canAfford(1) || isDrawing} className="flex-1 py-3 rounded-xl font-bold text-sm bg-purple-700 disabled:opacity-40 text-white">
-          {isDrawing ? 'Opening…' : `1 pack — ${selectedPack.cost}`}
+      <div className="flex gap-2">
+        <button onClick={() => handleDraw(1)} disabled={!canAfford(1) || isDrawing} className="flex-1 rounded-2xl bg-violet-700 py-3 text-sm font-semibold text-white disabled:opacity-40">
+          {isDrawing ? t('draw.opening') : t('draw.one', { cost: selectedPack.cost })}
         </button>
-        <button onClick={() => handleDraw(10)} disabled={!canAfford(10) || isDrawing} className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-purple-700 to-pink-700 disabled:opacity-40 text-white">
-          {isDrawing ? 'Opening…' : `10 packs — ${selectedPack.cost * 10}`}
+        <button onClick={() => handleDraw(10)} disabled={!canAfford(10) || isDrawing} className="flex-1 rounded-2xl bg-gradient-to-r from-violet-700 to-amber-700 py-3 text-sm font-semibold text-white disabled:opacity-40">
+          {isDrawing ? t('draw.opening') : t('draw.ten', { cost: selectedPack.cost * 10 })}
         </button>
       </div>
 
       {showReveal && lastResult && (
-        <div className="bg-game-surface border border-game-border rounded-xl p-4 space-y-4">
-          <h3 className="font-bold text-white">{lastResult.packs.length} pack(s) · {lastResult.cards.length} cards</h3>
+        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <h3 className="font-semibold text-white">{t('draw.result', { packs: lastResult.packs.length, cards: lastResult.cards.length })}</h3>
           {lastResult.packs.map((pack, i) => (
             <div key={i} className="space-y-2">
-              <div className="text-xs text-purple-300">Pack {i + 1} hit: {pack.hitKind.toUpperCase()} → {pack.hitRarity}</div>
+              <div className="text-xs text-violet-200">{t('draw.hit', { n: i + 1, kind: pack.hitKind.toUpperCase(), rarity: t(`rarity.${pack.hitRarity}`) })}</div>
               <div className="flex flex-wrap gap-3">
                 {pack.cards.map((card, j) => <CardResultItem key={j} card={card} />)}
               </div>
