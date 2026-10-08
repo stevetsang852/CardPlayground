@@ -109,7 +109,13 @@ export function DrawPage() {
   }, [handleDraw]);
 
   useEffect(() => {
-    if (!showReveal || !lastResult || step >= 6) return;
+    if (!showReveal || !lastResult) return;
+    const reduced = skipMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      setStep(6);
+      setIsDrawing(false);
+      return;
+    }
     const marks = [0, 420, 780, 1140, 1500, 2100, 2500];
     let start = 0;
     let frame = 0;
@@ -128,7 +134,7 @@ export function DrawPage() {
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [showReveal, lastResult, step]);
+  }, [showReveal, lastResult, skipMotion]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -251,7 +257,7 @@ export function DrawPage() {
             <div className="grid grid-cols-5 gap-2">
               {spotlight.cards.map((card, index) => (
                 step > index ? (
-                  <CardResultItem key={`${card.cardId}-${index}`} card={card} hit={card === spotlight.cards[spotlight.cards.length - 1] && step >= 5} fill />
+                  <CardResultItem key={`${card.cardId}-${index}`} card={card} hit={index === spotlight.cards.length - 1 && step >= 5} fill />
                 ) : (
                   <div key={`back-${index}`} className="stage-back">夜箔</div>
                 )
