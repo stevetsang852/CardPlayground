@@ -5,7 +5,13 @@
 body {
   background-color: #0F0D15;
   color: #F0EDF5;
-  font-family: "Segoe UI", sans-serif;
+  font-family: "Outfit", "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.display {
+  font-family: "Fraunces", Georgia, serif;
+  font-optical-sizing: auto;
 }
 
 @keyframes shimmer {
