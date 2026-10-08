@@ -11,8 +11,12 @@ import { ShopPage } from './components/ShopPage';
 import { AchievementsPage } from './components/AchievementsPage';
 import { SettingsPage } from './components/SettingsPage';
 import { BattlePage } from './components/battle/BattlePage';
+import { AdminPage } from './components/AdminPage';
+import { hydrateCatalog } from './game/adminCatalog';
 
-export type Page = 'home' | 'draw' | 'synthesis' | 'inventory' | 'shop' | 'achievements' | 'settings' | 'battle';
+hydrateCatalog();
+
+export type Page = 'home' | 'draw' | 'synthesis' | 'inventory' | 'shop' | 'achievements' | 'settings' | 'battle' | 'admin';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -60,6 +64,7 @@ export default function App() {
       case 'achievements':return <AchievementsPage />;
       case 'settings':    return <SettingsPage />;
       case 'battle':      return <BattlePage onBack={() => setCurrentPage('home')} />;
+      case 'admin':       return <AdminPage />;
       default:            return <HomePage onNavigate={setCurrentPage} />;
     }
   };

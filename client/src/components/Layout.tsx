@@ -17,6 +17,7 @@ const NAV_ITEMS: { page: Page; label: string; icon: string }[] = [
   { page: 'shop', label: 'Counter', icon: '\u25C8' },
   { page: 'achievements', label: 'Marks', icon: '\u2605' },
   { page: 'settings', label: 'Settings', icon: '\u2699' },
+  { page: 'admin', label: 'Admin', icon: '\u2692' },
 ];
 
 const BOTTOM: Page[] = ['home', 'draw', 'inventory', 'battle', 'shop'];
