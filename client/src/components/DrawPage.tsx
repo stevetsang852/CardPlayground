@@ -156,7 +156,7 @@ export function DrawPage() {
             skipMotion ? 'bg-white text-black' : 'bg-white/10 text-atelier-muted'
           }`}
         >
-          {跳過動畫: skipMotion ? '開' : '關'}
+          {跳過動畫} {skipMotion ? '開' : '關'}
         </button>
       </header>
 
