@@ -2,7 +2,9 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-echo CardPlayground - Docker start
+echo CardPlayground - Docker development
+echo Web http://localhost:5173    API http://localhost:3000
+echo Vite and the API reload from the mounted source.
 echo.
 
 where docker >nul 2>&1

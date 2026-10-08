@@ -14,6 +14,7 @@
     "test": "npm run test --workspaces",
     "dev:backend": "npm run dev -w backend",
     "dev:client": "npm run dev -w client",
+    "dev:docker": "docker compose up --build",
     "sync:catalog": "npm exec -w backend -- ts-node -r tsconfig-paths/register src/catalog/runSync.ts",
     "download:cards": "npm exec -w backend -- ts-node -r tsconfig-paths/register src/catalog/downloadM6aCards.ts"
   },

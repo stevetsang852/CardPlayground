@@ -10,9 +10,12 @@ export interface PackConfig {
   id: string;
   name: string;
   icon: string;
+  imageUrl: string;
+  setCode: string;
   cost: number;
   description: string;
   cardsPerPack: number;
+  packsIncluded: number;
   pityLegendaryAt: number;
   model: 'jp-sv-5';
 }
@@ -29,36 +32,47 @@ export interface DrawResult {
   updatedPlayer: Partial<PlayerState>;
 }
 
+const PACK_ART = (file: string) => `/packs/${file}.webp`;
+
 export const PACK_CONFIGS: PackConfig[] = [
   {
-    id: 'basic',
-    name: 'JP Expansion Pack',
+    id: 'm6a',
+    name: '擴充包「30th CELEBRATION」',
     icon: '🃏',
-    cost: 100,
-    cardsPerPack: 5,
+    imageUrl: PACK_ART('m6a'),
+    setCode: 'M6a',
+    cost: 25,
+    cardsPerPack: 6,
+    packsIncluded: 1,
     model: 'jp-sv-5',
-    description: '5 cards · M6a 30th CELEBRATION pool',
+    description: '建議售價 25 元 · 6 張閃卡 · 2026-09-16',
     pityLegendaryAt: 150,
   },
   {
-    id: 'premium',
-    name: 'JP High Class Pack',
-    icon: '💎',
-    cost: 500,
-    cardsPerPack: 5,
+    id: 'm6a-first-partners',
+    name: '特別卡組「最初的夥伴」',
+    icon: '🎁',
+    imageUrl: PACK_ART('m6a-first-partners'),
+    setCode: 'M6a',
+    cost: 135,
+    cardsPerPack: 6,
+    packsIncluded: 4,
     model: 'jp-sv-5',
-    description: 'Same 5-card structure, better hit floor',
+    description: '建議售價 135 元 · 特典卡包 1 包 + 擴充包 4 包',
     pityLegendaryAt: 80,
   },
   {
-    id: 'legendary',
-    name: 'Showcase Pack',
-    icon: '👑',
-    cost: 2000,
-    cardsPerPack: 5,
+    id: 'm6a-special',
+    name: '特別組合 仙子伊布ex／甲賀忍蛙ex',
+    icon: '✨',
+    imageUrl: PACK_ART('m6a-special'),
+    setCode: 'M6a',
+    cost: 145,
+    cardsPerPack: 6,
+    packsIncluded: 5,
     model: 'jp-sv-5',
-    description: 'Demo pack with elevated chase odds',
-    pityLegendaryAt: 10,
+    description: '建議售價 145 元 · 擴充包 5 包 + 特典卡 2 張',
+    pityLegendaryAt: 80,
   },
 ];
 
@@ -90,8 +104,8 @@ function openOnePack(pack: PackConfig, pityReady: boolean): OpenedPack {
     cards.push(instanceOf(rareSlot ? 'rare' : 'common', rareSlot ? 'u' : 'c'));
   }
   let hitKind = rollJpHitSlot(cryptoRandom.nextFloat());
-  if (pack.id === 'premium' && hitKind === 'r' && cryptoRandom.nextFloat() < 0.15) hitKind = 'ar';
-  if (pack.id === 'legendary' && (hitKind === 'r' || hitKind === 'rr')) hitKind = cryptoRandom.nextFloat() < 0.4 ? 'sar' : 'sr';
+  if (pack.id === 'm6a-first-partners' && hitKind === 'r' && cryptoRandom.nextFloat() < 0.15) hitKind = 'ar';
+  if (pack.id === 'm6a-special' && hitKind === 'r' && cryptoRandom.nextFloat() < 0.2) hitKind = 'ar';
   if (pityReady) hitKind = 'sar';
   const hitRarity = hitKindToAppRarity(hitKind) as Rarity;
   const hit = instanceOf(hitRarity, hitKind);
@@ -110,7 +124,8 @@ export function drawCards(
   const cards: ICardInstance[] = [];
   let { drawsSinceLastLegendary, drawsSinceLastMythic, luckValue, totalDraws } = player;
   const doubleDrop = activeEvents.some(e => e.type === 'double_drop' && e.remainingActions > 0);
-  const actual = doubleDrop ? packCount * 2 : packCount;
+  const units = Math.max(1, pack.packsIncluded || 1);
+  const actual = (doubleDrop ? packCount * 2 : packCount) * units;
 
   for (let i = 0; i < actual; i++) {
     const pityReady = drawsSinceLastLegendary >= pack.pityLegendaryAt;

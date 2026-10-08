@@ -2,7 +2,7 @@ import type { Rarity } from '../cardData';
 import { PACK_CONFIGS, type PackConfig } from './DrawService';
 import { PTCG_TEMPLATES, type PtcgTemplate } from './ptcgPool';
 
-const STORAGE_KEY = 'cmr-admin-catalog-v1';
+const STORAGE_KEY = 'cmr-admin-catalog-v2';
 
 export const RARITIES: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
 
@@ -75,7 +75,13 @@ export function readCatalog(): CatalogSnapshot {
 
 export function applyCatalog(snapshot: CatalogSnapshot) {
   PTCG_TEMPLATES.splice(0, PTCG_TEMPLATES.length, ...snapshot.cards.map(toTemplate));
-  PACK_CONFIGS.splice(0, PACK_CONFIGS.length, ...snapshot.packs.map((pack) => ({ ...pack, model: 'jp-sv-5' as const })));
+  PACK_CONFIGS.splice(0, PACK_CONFIGS.length, ...snapshot.packs.map((pack) => ({
+    ...pack,
+    imageUrl: pack.imageUrl || '',
+    setCode: pack.setCode || 'M6a',
+    packsIncluded: pack.packsIncluded || 1,
+    model: 'jp-sv-5' as const,
+  })));
 }
 
 export function saveCatalog(snapshot: CatalogSnapshot) {

@@ -31,12 +31,15 @@ KADO_SYNC_MAX_SETS=3
 REDIS_URL=redis://127.0.0.1:6379
 ```
 
-Docker:
+Docker development (`debug` target, source mounted, hot reload):
 
 ```bash
-docker compose up --build
+npm run dev:docker
+# or: docker compose up --build
 # http://localhost:5173  API http://localhost:3000
 ```
+
+Windows: `start_in_docker.bat`. Tests inside images: `docker compose --profile test up --build`.
 
 ## Card catalog (KADO / official HK)
 

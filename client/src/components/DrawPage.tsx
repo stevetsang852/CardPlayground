@@ -75,7 +75,7 @@ export function DrawPage() {
       setLastResult(result);
       setShowReveal(true);
       setIsDrawing(false);
-    });
+    }, selectedPack.imageUrl);
   }, [canAfford, isDrawing, selectedPack, player, activeEvents, setPlayer, addCards, incrementActionCount]);
 
   return (
@@ -102,9 +102,10 @@ export function DrawPage() {
           const isSelected = selectedPack.id === pack.id;
           const label = localizedPack(locale, pack);
           return (
-            <button key={pack.id} onClick={() => setSelectedPack(pack)} className={`rounded-2xl border p-4 text-left ${isSelected ? 'border-amber-200/70 bg-violet-900/50' : 'border-white/10 bg-white/5'}`}>
-              <div className="mb-1 text-xl">{pack.icon}</div>
+            <button key={pack.id} onClick={() => setSelectedPack(pack)} className={`rounded-2xl border p-3 text-left ${isSelected ? 'border-amber-200/70 bg-violet-900/50' : 'border-white/10 bg-white/5'}`}>
+              <img src={pack.imageUrl} alt="" {...cardImageAttrs(isSelected ? 'high' : 'low')} className="mb-2 h-36 w-full rounded-xl bg-black/30 object-contain" />
               <div className="text-sm font-semibold text-white">{label.name}</div>
+              <div className="text-xs text-violet-200/60">{pack.setCode}</div>
               <div className="text-sm text-amber-300">{pack.cost}</div>
               <div className="mt-1 text-xs text-violet-200/70">{label.description}</div>
             </button>

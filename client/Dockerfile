@@ -23,4 +23,4 @@ CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "5173"]
 FROM deps AS test
 WORKDIR /app/client
 ENV NODE_ENV=test
-CMD ["npx", "jest", "src/game", "--coverage=false", "--runInBand"]
+CMD ["npx", "jest", "src/game", "src/i18n.test.ts", "src/animations/cardPaint.test.ts", "--coverage=false", "--runInBand"]
