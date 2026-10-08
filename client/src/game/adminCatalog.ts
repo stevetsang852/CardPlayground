@@ -2,7 +2,7 @@ import type { Rarity } from '../cardData';
 import { PACK_CONFIGS, type PackConfig } from './DrawService';
 import { PTCG_TEMPLATES, type PtcgTemplate } from './ptcgPool';
 
-const STORAGE_KEY = 'cmr-admin-catalog-v2';
+const STORAGE_KEY = 'cmr-admin-catalog-v3';
 
 export const RARITIES: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
 

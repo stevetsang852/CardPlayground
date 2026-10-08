@@ -3,6 +3,13 @@ export const KADO_PACKS = [
   { id: 'kado-m6a', name: '擴充包「30th CELEBRATION」', sourceUrl: 'https://www.kado.hk/database/tw/M6a', cardCount: 168, locale: 'tw', type: 'basic', cost: 100, currencyType: 'soft' },
   { id: 'kado-30th-jp', name: '30th CELEBRATION', sourceUrl: 'https://www.kado.hk/set/9f21c00e-4e89-42d7-b56a-1173d1974cee', cardCount: 176, locale: 'jp', type: 'basic', cost: 100, currencyType: 'soft' },
   { id: 'kado-storm', name: 'Storm Emeralda', sourceUrl: 'https://www.kado.hk/set/7f8f91f2-a580-412c-8cd9-4335cacbc3e2', cardCount: 113, locale: 'jp', type: 'basic', cost: 100, currencyType: 'soft' },
+  { id: 'kado-shiny-star', name: '閃色明星V', sourceUrl: 'https://www.kado.hk/database/tw/tw-012', cardCount: 330, locale: 'tw', type: 'basic', cost: 100, currencyType: 'soft' },
+  { id: 'kado-tag-team', name: '傳說交鋒', sourceUrl: 'https://www.kado.hk/database/tw/tw-010-a', cardCount: 196, locale: 'tw', type: 'basic', cost: 100, currencyType: 'soft' },
+  { id: 'kado-dream', name: '美夢成真組合篇', sourceUrl: 'https://www.kado.hk/database/tw/tw-009-a', cardCount: 193, locale: 'tw', type: 'basic', cost: 100, currencyType: 'soft' },
+  { id: 'kado-151', name: '寶可夢卡牌151', sourceUrl: 'https://www.kado.hk/database/tw/tw-007', cardCount: 207, locale: 'tw', type: 'basic', cost: 100, currencyType: 'soft' },
+  { id: 'official-s8a', name: '25週年收藏款', sourceUrl: 'https://asia.pokemon-card.com/hk/card-search/list/?expansionCodes=S8a', cardCount: 28, locale: 'tw', type: 'basic', cost: 100, currencyType: 'soft' },
+  { id: 'official-sc1a', name: '劍&盾', sourceUrl: 'https://asia.pokemon-card.com/hk/card-search/list/?expansionCodes=SC1a', cardCount: 154, locale: 'tw', type: 'basic', cost: 100, currencyType: 'soft' },
+  { id: 'official-ac1a', name: '眾星雲集組合篇', sourceUrl: 'https://asia.pokemon-card.com/hk/card-search/list/?expansionCodes=AC1a', cardCount: 173, locale: 'tw', type: 'basic', cost: 100, currencyType: 'soft' },
 ];
 
 const PACK = 'kado-m6a';
