@@ -26,6 +26,22 @@ const RARITY_PARTICLE_COUNT: Record<string, number> = {
   common: 20, rare: 60, epic: 120, legendary: 220, mythic: 400,
 };
 
+/** Japanese SV / M6a grades. Matches foil-grades.css. */
+const GRADE_COLOR: Record<string, number> = {
+  C: 0x6b7280,
+  U: 0xb9c4d6,
+  R: 0x5b8cff,
+  RR: 0xb06cff,
+  AR: 0xe2a15a,
+  SR: 0xd7dde8,
+  SAR: 0xffd56a,
+  UR: 0xf6c453,
+};
+
+const GRADE_PARTICLE_COUNT: Record<string, number> = {
+  C: 12, U: 28, R: 60, RR: 90, AR: 110, SR: 140, SAR: 200, UR: 280,
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 // Tracks all live holo cards so the render loop can update them
@@ -38,11 +54,13 @@ class HoloCardMesh {
   private tex: THREE.CanvasTexture;
   private icon: string;
   private rarity: string;
+  private grade: string;
   private image: HTMLImageElement | null;
 
-  constructor(icon: string, rarity: string, size = 1, image: HTMLImageElement | null = null) {
+  constructor(icon: string, rarity: string, size = 1, image: HTMLImageElement | null = null, grade = '') {
     this.icon = icon;
     this.rarity = rarity;
+    this.grade = grade;
     this.image = image;
 
     this.canvas = document.createElement('canvas');
@@ -55,8 +73,8 @@ class HoloCardMesh {
       map: this.tex,
       transparent: true,
       side: THREE.DoubleSide,
-      emissive: new THREE.Color(RARITY_COLOR[rarity] ?? 0x888888),
-      emissiveIntensity: image ? 0.04 : rarity === 'mythic' ? 0.3 : rarity === 'legendary' ? 0.25 : 0.15,
+      emissive: new THREE.Color(GRADE_COLOR[grade] ?? RARITY_COLOR[rarity] ?? 0x888888),
+      emissiveIntensity: image ? 0.04 : grade === 'UR' || rarity === 'mythic' ? 0.3 : grade === 'SAR' || rarity === 'legendary' ? 0.25 : 0.15,
     });
 
     const geo = new THREE.PlaneGeometry(size * 0.7, size);
@@ -80,27 +98,32 @@ class HoloCardMesh {
     ctx.roundRect(4, 4, W - 8, H - 8, 16);
     ctx.fill();
 
-    // ── Rarity-specific holo layer ────────────────────────────────────────
-    if (this.rarity === 'rare') {
-      this._drawRareHolo(ctx, t, W, H);
-    } else if (this.rarity === 'epic') {
-      this._drawEpicHolo(ctx, t, W, H);
-    } else if (this.rarity === 'legendary') {
-      this._drawLegendaryHolo(ctx, t, W, H);
-    } else if (this.rarity === 'mythic') {
-      this._drawMythicHolo(ctx, t, W, H);
-    }
+    // ── Grade foil, falling back to the older five-step rarity ───────────
+    const grade = this.grade;
+    if (grade === 'U') this._drawReverseHolo(ctx, t, W, H);
+    else if (grade === 'R' || (!grade && this.rarity === 'rare')) this._drawRareHolo(ctx, t, W, H);
+    else if (grade === 'RR' || grade === 'SR' || (!grade && this.rarity === 'epic')) this._drawEpicHolo(ctx, t, W, H);
+    else if (grade === 'AR') this._drawGalleryHolo(ctx, t, W, H);
+    else if (grade === 'SAR' || (!grade && this.rarity === 'legendary')) this._drawLegendaryHolo(ctx, t, W, H);
+    else if (grade === 'UR' || (!grade && this.rarity === 'mythic')) this._drawMythicHolo(ctx, t, W, H);
 
-    // ── Border ────────────────────────────────────────────────────────────
-    const borderColor = '#' + ((RARITY_COLOR[this.rarity] ?? 0x888888) >>> 0).toString(16).padStart(6, '0');
+    const borderColor = '#' + ((GRADE_COLOR[grade] ?? RARITY_COLOR[this.rarity] ?? 0x888888) >>> 0).toString(16).padStart(6, '0');
     ctx.strokeStyle = borderColor;
-    ctx.lineWidth = this.rarity === 'mythic' ? 8 : this.rarity === 'legendary' ? 7 : 5;
+    ctx.lineWidth = grade === 'UR' || this.rarity === 'mythic' ? 8 : grade === 'SAR' || this.rarity === 'legendary' ? 7 : 5;
     ctx.shadowColor = borderColor;
-    ctx.shadowBlur = this.rarity === 'common' ? 0 : 18;
+    ctx.shadowBlur = grade === 'C' || this.rarity === 'common' ? 0 : 18;
     ctx.beginPath();
     ctx.roundRect(4, 4, W - 8, H - 8, 16);
     ctx.stroke();
     ctx.shadowBlur = 0;
+
+    if (grade && grade !== 'C') {
+      ctx.fillStyle = '#f4efe6';
+      ctx.font = 'bold 18px "Segoe UI", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(grade, W - 16, 16);
+    }
 
     if (this.image) {
       ctx.save();
@@ -123,6 +146,43 @@ class HoloCardMesh {
     }
 
     this.tex.needsUpdate = true;
+  }
+
+
+  private _drawReverseHolo(ctx: CanvasRenderingContext2D, t: number, W: number, H: number): void {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.clip();
+    const offset = (t * 24) % 18;
+    ctx.globalAlpha = 0.28;
+    ctx.strokeStyle = '#d5deea';
+    ctx.lineWidth = 2;
+    for (let x = -H; x < W + H; x += 10) {
+      ctx.beginPath();
+      ctx.moveTo(x + offset, 0);
+      ctx.lineTo(x - H + offset, H);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  private _drawGalleryHolo(ctx: CanvasRenderingContext2D, t: number, W: number, H: number): void {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(4, 4, W - 8, H - 8, 16);
+    ctx.clip();
+    ctx.globalAlpha = 0.55;
+    const drift = (t * 12) % 20;
+    for (let i = 0; i < 28; i++) {
+      const x = ((i * 37 + drift) % W);
+      const y = ((i * 53) % H);
+      ctx.fillStyle = i % 2 ? '#ffe7bf' : '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   private _drawRareHolo(ctx: CanvasRenderingContext2D, t: number, W: number, H: number): void {
@@ -281,7 +341,7 @@ class HoloCardMesh {
 }
 
 function makeCardMesh(card: DrawnCardInfo, size: number, image: HTMLImageElement | null): THREE.Mesh {
-  return new HoloCardMesh(card.name || card.icon, card.rarity, size, image).mesh;
+  return new HoloCardMesh(card.name || card.icon, card.rarity, size, image, card.grade ?? '').mesh;
 }
 
 function loadCardImage(url: string): Promise<HTMLImageElement | null> {
@@ -394,6 +454,8 @@ export interface DrawnCardInfo {
   name: string;
   rarity: string;
   imageUrl?: string;
+  /** C U R RR AR SR SAR UR. Optional so older callers keep the rarity foil. */
+  grade?: string;
 }
 
 export class PackOpenAnimation {
@@ -552,11 +614,11 @@ export class PackOpenAnimation {
         burstParticles(
           scene,
           new THREE.Vector3(tx, ty, 0),
-          RARITY_COLOR[card.rarity] ?? 0xffffff,
-          RARITY_PARTICLE_COUNT[card.rarity] ?? 40,
+          GRADE_COLOR[card.grade ?? ''] ?? RARITY_COLOR[card.rarity] ?? 0xffffff,
+          GRADE_PARTICLE_COUNT[card.grade ?? ''] ?? RARITY_PARTICLE_COUNT[card.rarity] ?? 40,
         );
         // Extra glow pulse for legendary/mythic
-        if (card.rarity === 'legendary' || card.rarity === 'mythic') {
+        if (card.grade === 'SAR' || card.grade === 'UR' || card.rarity === 'legendary' || card.rarity === 'mythic') {
           const mat = mesh.material as THREE.MeshStandardMaterial;
           gsap.to(mat, { emissiveIntensity: 1.5, duration: 0.2, yoyo: true, repeat: 3 });
         }
