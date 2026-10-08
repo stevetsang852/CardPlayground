@@ -17,7 +17,12 @@ const RARITY_STYLES: Record<Rarity, { text: string; label: string }> = {
 
 function toInfo(card: ICardInstance): DrawnCardInfo {
   const template = findPtcgTemplate(card.cardId);
-  return { icon: template?.name ?? '\uD83C\uDCCF', name: template?.name ?? `#${card.cardId}`, rarity: card.rarity };
+  return {
+    icon: template?.icon ?? template?.name ?? 'card',
+    name: template?.name ?? `#${card.cardId}`,
+    rarity: card.rarity,
+    imageUrl: template?.imageUrl,
+  };
 }
 
 function CardResultItem({ card }: { card: ICardInstance }) {
@@ -31,9 +36,9 @@ function CardResultItem({ card }: { card: ICardInstance }) {
         <div className="card__glare" />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 4, borderRadius: 10, overflow: 'hidden' }}>
           {template?.imageUrl ? (
-            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0e1830' }} />
+            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1, background: '#0e1830' }} />
           ) : null}
-          <span className={`relative font-bold ${style.text}`} style={{ fontSize: 8, background: 'rgba(0,0,0,0.55)', padding: '1px 4px', borderRadius: 4 }}>{template?.name ?? `#${card.cardId}`}</span>
+          <span className={`relative font-bold ${style.text}`} style={{ fontSize: 8, zIndex: 6, background: 'rgba(0,0,0,0.55)', padding: '1px 4px', borderRadius: 4 }}>{template?.name ?? `#${card.cardId}`}</span>
         </div>
       </div>
     </div>
