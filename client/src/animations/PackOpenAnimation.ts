@@ -12,6 +12,7 @@
 
 import * as THREE from 'three';
 import { gsap } from 'gsap';
+import { shouldRedrawCard } from './cardPaint';
 
 // ── Rarity colour map ─────────────────────────────────────────────────────────
 const RARITY_COLOR: Record<string, number> = {
@@ -39,6 +40,7 @@ class HoloCardMesh {
   private icon: string;
   private rarity: string;
   private image: HTMLImageElement | null;
+  private painted = false;
 
   constructor(icon: string, rarity: string, size = 1, image: HTMLImageElement | null = null) {
     this.icon = icon;
@@ -67,6 +69,7 @@ class HoloCardMesh {
   }
 
   draw(t: number): void {
+    if (!shouldRedrawCard(Boolean(this.image), this.painted)) return;
     const ctx = this.ctx;
     const W = 256, H = 360;
     ctx.clearRect(0, 0, W, H);
@@ -122,6 +125,7 @@ class HoloCardMesh {
       ctx.fillText(this.icon, W / 2, H / 2, W - 28);
     }
 
+    if (this.image) this.painted = true;
     this.tex.needsUpdate = true;
   }
 

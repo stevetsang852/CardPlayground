@@ -10,6 +10,7 @@ import {
   type CatalogSnapshot,
 } from '../game/adminCatalog';
 import { useI18n } from '../i18n';
+import { cardImageAttrs } from '../game/cardImage';
 
 type Tab = 'cards' | 'packs';
 
@@ -221,7 +222,7 @@ export function AdminPage() {
           <ul className="space-y-2">
             {cards.map((card) => (
               <li key={card.id} className="flex items-center gap-3 rounded-xl border border-game-border bg-game-surface p-2">
-                <img src={card.imageUrl} alt="" className="h-16 w-12 rounded object-cover bg-black/40" />
+                <img src={card.imageUrl} alt="" {...cardImageAttrs()} className="h-16 w-12 rounded object-cover bg-black/40" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-white">{card.name}</p>
                   <p className="text-xs text-purple-300">{t('admin.meta', { id: card.id, rarity: t(`rarity.${card.rarity}`), dex: card.dex })}</p>

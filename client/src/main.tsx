@@ -3,8 +3,6 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { LocaleProvider } from './i18n';
 import './index.css';
-import './card-effects.css';
-import './vendor/pokemon-cards-css/index.css';
 import './ptcg-card.css';
 import './card-tilt';
 

@@ -4,6 +4,9 @@ import type { Rarity } from '../cardData';
 import { PTCG_TEMPLATES, findPtcgTemplate } from '../game/ptcgPool';
 import type { ICardInstance } from '../db/CardGameDB';
 import { useI18n } from '../i18n';
+import { cardImageAttrs } from '../game/cardImage';
+import '../card-effects.css';
+import '../vendor/pokemon-cards-css/index.css';
 
 type Tab = 'inventory' | 'catalog';
 type SortKey = 'obtained' | 'rarity' | 'name';
@@ -25,7 +28,7 @@ function CardFace({ cardId, rarity, extraClass = '', count, onClick }: { cardId:
   return (
     <div className="card-container relative" onClick={onClick} style={{ cursor: 'pointer' }}>
       <div className={`inv-card ${rarity} ${extraClass} w-24 h-32 rounded-xl border-2 overflow-hidden bg-[#0e1830]`}>
-        <img src={template.imageUrl} alt={template.name} className="w-full h-full object-contain pointer-events-none" />
+        <img src={template.imageUrl} alt={template.name} {...cardImageAttrs()} className="w-full h-full object-contain pointer-events-none" />
         <span className={`absolute bottom-1 left-1 text-[8px] px-1 rounded-full capitalize ${RARITY_BADGE[rarity]}`}>{template.name}</span>
       </div>
       {count !== undefined && count > 1 && (
@@ -110,7 +113,7 @@ export function InventoryPage() {
       {detail && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setDetailCardId(null)}>
           <div className="bg-gray-900 rounded-xl p-4 max-w-xs" onClick={(e) => e.stopPropagation()}>
-            <img src={detail.imageUrl} alt={detail.name} className="w-48 h-48 object-contain mx-auto" />
+            <img src={detail.imageUrl} alt={detail.name} {...cardImageAttrs('high')} className="w-48 h-48 object-contain mx-auto" />
             <div className="text-center mt-2 font-bold">{detail.name}</div>
             <div className="text-center text-xs text-gray-400">{detail.series} · #{detail.id}</div>
           </div>

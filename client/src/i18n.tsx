@@ -276,7 +276,10 @@ const tables: Record<Locale, Record<string, string>> = { 'zh-Hant': zhHant, en }
 
 function fill(text: string, vars?: Record<string, string | number>) {
   if (!vars) return text;
-  return Object.entries(vars).reduce((out, [key, value]) => out.replaceAll(`{${key}}`, String(value)), text);
+  return Object.entries(vars).reduce(
+    (out, [key, value]) => out.split(`{${key}}`).join(String(value)),
+    text,
+  );
 }
 
 export function translate(locale: Locale, key: string, vars?: Record<string, string | number>) {

@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useGameStore } from './store';
 import { checkDailyLogin, generateDailyMissions } from './game/SeasonService';
 import { checkAchievements } from './game/AchievementService';
 import { Layout } from './components/Layout';
 import { HomePage } from './components/HomePage';
-import { DrawPage } from './components/DrawPage';
-import { SynthesisPage } from './components/SynthesisPage';
-import { InventoryPage } from './components/InventoryPage';
-import { ShopPage } from './components/ShopPage';
-import { AchievementsPage } from './components/AchievementsPage';
-import { SettingsPage } from './components/SettingsPage';
-import { BattlePage } from './components/battle/BattlePage';
-import { AdminPage } from './components/AdminPage';
 import { hydrateCatalog } from './game/adminCatalog';
 import { useI18n } from './i18n';
+
+const DrawPage = lazy(() => import('./components/DrawPage').then((m) => ({ default: m.DrawPage })));
+const SynthesisPage = lazy(() => import('./components/SynthesisPage').then((m) => ({ default: m.SynthesisPage })));
+const InventoryPage = lazy(() => import('./components/InventoryPage').then((m) => ({ default: m.InventoryPage })));
+const ShopPage = lazy(() => import('./components/ShopPage').then((m) => ({ default: m.ShopPage })));
+const AchievementsPage = lazy(() => import('./components/AchievementsPage').then((m) => ({ default: m.AchievementsPage })));
+const SettingsPage = lazy(() => import('./components/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const BattlePage = lazy(() => import('./components/battle/BattlePage').then((m) => ({ default: m.BattlePage })));
+const AdminPage = lazy(() => import('./components/AdminPage').then((m) => ({ default: m.AdminPage })));
 
 hydrateCatalog();
 
@@ -77,7 +78,9 @@ export default function App() {
 
   return (
     <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-      {renderPage()}
+      <Suspense fallback={<div className="py-16 text-center text-amber-100">{t('app.loading')}</div>}>
+        {renderPage()}
+      </Suspense>
     </Layout>
   );
 }

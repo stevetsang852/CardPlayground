@@ -6,7 +6,10 @@ import { findPtcgTemplate } from '../game/ptcgPool';
 import type { ICardInstance } from '../db';
 import { PackOpenAnimation, type DrawnCardInfo } from '../animations';
 import { foilForCard } from '../game/foilMap';
+import { cardImageAttrs } from '../game/cardImage';
 import { localizedPack, useI18n } from '../i18n';
+import '../card-effects.css';
+import '../vendor/pokemon-cards-css/index.css';
 
 const RARITY_STYLES: Record<Rarity, { text: string; label: string }> = {
   common:    { text: 'text-gray-300',   label: 'Common' },
@@ -37,7 +40,7 @@ function CardResultItem({ card }: { card: ICardInstance }) {
         <div className="card__glare" />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 4, borderRadius: 10, overflow: 'hidden' }}>
           {template?.imageUrl ? (
-            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1, background: '#0e1830' }} />
+            <img src={template.imageUrl} alt={template.name} {...cardImageAttrs('high')} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1, background: '#0e1830' }} />
           ) : null}
           <span className={`relative font-bold ${style.text}`} style={{ fontSize: 8, zIndex: 6, background: 'rgba(0,0,0,0.55)', padding: '1px 4px', borderRadius: 4 }}>{template?.name ?? `#${card.cardId}`}</span>
         </div>
