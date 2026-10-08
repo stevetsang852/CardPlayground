@@ -1,22 +1,42 @@
+import { useState } from 'react';
 import { useGameStore } from '../store';
 import { getSeasonProgress } from '../game/SeasonService';
 import { PACK_CONFIGS } from '../game/DrawService';
+import { PTCG_TEMPLATES } from '../game/ptcgPool';
 import type { Page } from '../App';
+
+const STIPEND = 600;
+const STIPEND_KEY = 'cardplayground.stipend';
 
 interface HomePageProps {
   onNavigate: (page: Page) => void;
 }
 
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function HomePage({ onNavigate }: HomePageProps) {
-  const { player, cards, activeEvents, seasonMissions } = useGameStore();
+  const { player, cards, activeEvents, seasonMissions, setPlayer } = useGameStore();
   const seasonProgress = getSeasonProgress(seasonMissions);
   const seasonWidth = Math.min((seasonProgress.completedMissions / Math.max(seasonProgress.nextMilestoneAt, 1)) * 100, 100);
   const pack = PACK_CONFIGS[0]!;
   const pityLeft = Math.max(pack.pityLegendaryAt - player.drawsSinceLastLegendary, 0);
+  const owned = new Set(cards.map((card) => card.cardId)).size;
+  const [stipendDay, setStipendDay] = useState(() => localStorage.getItem(STIPEND_KEY) ?? '');
+  const claimed = stipendDay === today();
 
   const openCounter = (auto: boolean) => {
     if (auto) sessionStorage.setItem('cardplayground.autoOpen', '1');
     onNavigate('draw');
+  };
+
+  const claim = () => {
+    const day = today();
+    if (localStorage.getItem(STIPEND_KEY) === day) return;
+    localStorage.setItem(STIPEND_KEY, day);
+    setStipendDay(day);
+    setPlayer({ softCurrency: player.softCurrency + STIPEND });
   };
 
   return (
@@ -43,8 +63,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
         {[
           ['錢包', player.softCurrency.toLocaleString()],
           ['運氣', String(player.luckValue)],
-          ['已抽', String(player.totalDraws)],
-          ['卡冊', `${cards.length}`],
+          ['已拆', String(player.totalDraws)],
+          ['卡種', `${owned}/${PTCG_TEMPLATES.length}`],
         ].map(([label, value]) => (
           <div key={label} className="glass rounded-2xl p-4">
             <div className="text-[11px] uppercase tracking-wider text-atelier-muted">{label}</div>
@@ -52,6 +72,15 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
         ))}
       </section>
+
+      <button
+        type="button"
+        disabled={claimed}
+        onClick={claim}
+        className="glow-press min-h-12 w-full rounded-2xl bg-white/10 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {claimed ? '今晚津貼已領' : `領今晚津貼 · ${STIPEND}`}
+      </button>
 
       {activeEvents.length > 0 && (
         <section className="glass rounded-2xl p-4">

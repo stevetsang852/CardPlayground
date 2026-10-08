@@ -4,8 +4,8 @@ import { drawCards, PACK_CONFIGS, type PackConfig, type DrawResult, type OpenedP
 import { type Rarity } from '../cardData';
 import { findPtcgTemplate } from '../game/ptcgPool';
 import type { ICardInstance } from '../db';
-import { PackOpenAnimation, type DrawnCardInfo } from '../animations';
 import { foilForCard, gradeForFoil } from '../game/foilMap';
+import { playPackTone } from '../game/packSound';
 
 const PACK_TONE: Record<string, string> = {
   basic: '',
@@ -29,16 +29,6 @@ const RARITY_STYLES: Record<Rarity, { text: string; label: string }> = {
   mythic:    { text: 'text-pink-300',   label: 'UR' },
 };
 
-function toInfo(card: ICardInstance): DrawnCardInfo {
-  const template = findPtcgTemplate(card.cardId);
-  return {
-    icon: template?.icon ?? template?.name ?? 'card',
-    name: template?.name ?? `#${card.cardId}`,
-    rarity: card.rarity,
-    imageUrl: template?.imageUrl,
-  };
-}
-
 function bestPack(result: DrawResult): OpenedPack | null {
   return result.packs.reduce<OpenedPack | null>((best, pack) => {
     if (!best) return pack;
@@ -46,19 +36,19 @@ function bestPack(result: DrawResult): OpenedPack | null {
   }, null);
 }
 
-function CardResultItem({ card, hit }: { card: ICardInstance; hit?: boolean }) {
+function CardResultItem({ card, hit, fill }: { card: ICardInstance; hit?: boolean; fill?: boolean }) {
   const template = findPtcgTemplate(card.cardId);
   const style = RARITY_STYLES[card.rarity];
   const foil = card.foil || foilForCard(undefined, card.rarity);
   const grade = gradeForFoil(foil);
   return (
-    <div className={`card-container ${hit ? 'hit-card' : ''}`}>
-      <div className={`card drawn-card ptcg-card ptcg-card-sm ${card.rarity} ${hit ? 'ring-2 ring-atelier-warm' : ''}`} data-rarity={foil} data-grade={grade}>
+    <div className={`card-container ${hit ? 'hit-card' : ''} ${fill ? 'w-full' : ''}`}>
+      <div className={`card drawn-card ptcg-card ${fill ? '' : 'ptcg-card-sm'} ${card.rarity} ${hit ? 'ring-2 ring-atelier-warm' : ''}`} data-rarity={foil} data-grade={grade} style={fill ? { width: '100%' } : undefined}>
         <div className="card__shine" />
         <div className="card__glare" />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 4, borderRadius: 10, overflow: 'hidden' }}>
           {template?.imageUrl ? (
-            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1, background: '#0e1830' }} />
+            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', zIndex: 1, background: '#0e1830' }} />
           ) : null}
           <span className={`relative font-bold ${style.text}`} style={{ fontSize: 8, zIndex: 6, background: 'rgba(0,0,0,0.55)', padding: '1px 4px', borderRadius: 4 }}>
             {hit ? 'HIT · ' : ''}{template?.name ?? `#${card.cardId}`}
@@ -79,7 +69,9 @@ export function DrawPage() {
   const [lastResult, setLastResult] = useState<DrawResult | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
+  const [step, setStep] = useState(6);
   const [skipMotion, setSkipMotion] = useState(() => localStorage.getItem('cardplayground.skipReveal') === '1');
+  const [muted, setMuted] = useState(() => localStorage.getItem('cardplayground.muted') === '1');
 
   const canAfford = useCallback(
     (count: number) => player.softCurrency >= selectedPack.cost * count,
@@ -100,25 +92,49 @@ export function DrawPage() {
     setPlayer(result.updatedPlayer);
     await addCards(result.cards);
     incrementActionCount();
-    const firstPack = result.packs[0]?.cards ?? result.cards.slice(0, 5);
-    const finish = () => {
-      setLastResult(result);
-      setShowReveal(true);
-      setIsDrawing(false);
-    };
+    const best = bestPack(result);
+    const rank = best ? HIT_RANK[best.hitKind] ?? 0 : 0;
+    playPackTone(rank >= 6 ? 'chase' : rank >= 5 ? 'hit' : 'tick', muted);
     const reduced = skipMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) {
-      finish();
-      return;
-    }
-    new PackOpenAnimation().play(selectedPack.icon, firstPack.map(toInfo), finish);
-  }, [canAfford, isDrawing, selectedPack, player, activeEvents, setPlayer, addCards, incrementActionCount, skipMotion]);
+    setLastResult(result);
+    setShowReveal(true);
+    setStep(reduced ? 6 : 0);
+    if (reduced) setIsDrawing(false);
+  }, [canAfford, isDrawing, selectedPack, player, activeEvents, setPlayer, addCards, incrementActionCount, skipMotion, muted]);
 
   useEffect(() => {
     if (sessionStorage.getItem('cardplayground.autoOpen') !== '1') return;
     sessionStorage.removeItem('cardplayground.autoOpen');
     void handleDraw(1);
   }, [handleDraw]);
+
+  useEffect(() => {
+    if (!showReveal || !lastResult) return;
+    const reduced = skipMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      setStep(6);
+      setIsDrawing(false);
+      return;
+    }
+    const marks = [0, 420, 780, 1140, 1500, 2100, 2500];
+    let start = 0;
+    let frame = 0;
+    let last = -1;
+    const loop = (t: number) => {
+      if (!start) start = t;
+      const elapsed = t - start;
+      let next = 0;
+      for (let i = 0; i < marks.length; i += 1) if (elapsed >= marks[i]!) next = i;
+      if (next !== last) {
+        last = next;
+        setStep(next);
+        if (next === 6) setIsDrawing(false);
+      }
+      if (next < 6) frame = requestAnimationFrame(loop);
+    };
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, [showReveal, lastResult, skipMotion]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -138,6 +154,7 @@ export function DrawPage() {
   const best = lastResult ? bestPack(lastResult) : null;
   const chase = best ? (HIT_RANK[best.hitKind] ?? 0) >= 5 : false;
   const shortfall = selectedPack.cost - player.softCurrency;
+  const spotlight = lastResult?.packs[0];
 
   return (
     <div className="space-y-4">
@@ -146,19 +163,32 @@ export function DrawPage() {
           <p className="text-[11px] uppercase tracking-[0.28em] text-atelier-muted">Pack stage</p>
           <h2 className="display text-3xl text-white">拆包櫃檯</h2>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            const next = !skipMotion;
-            setSkipMotion(next);
-            localStorage.setItem('cardplayground.skipReveal', next ? '1' : '0');
-          }}
-          className={`min-h-11 rounded-full px-3 text-xs ${
-            skipMotion ? 'bg-white text-black' : 'bg-white/10 text-atelier-muted'
-          }`}
-        >
-          {跳過動畫} {skipMotion ? '開' : '關'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !muted;
+              setMuted(next);
+              localStorage.setItem('cardplayground.muted', next ? '1' : '0');
+            }}
+            className="min-h-11 rounded-full bg-white/10 px-3 text-xs text-atelier-muted"
+          >
+            {聲音} {muted ? '關' : '開'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !skipMotion;
+              setSkipMotion(next);
+              localStorage.setItem('cardplayground.skipReveal', next ? '1' : '0');
+            }}
+            className={`min-h-11 rounded-full px-3 text-xs ${
+              skipMotion ? 'bg-white text-black' : 'bg-white/10 text-atelier-muted'
+            }`}
+          >
+            {跳過動畫} {skipMotion ? '開' : '關'}
+          </button>
+        </div>
       </header>
 
       <section className="glass rounded-3xl p-4">
@@ -206,12 +236,12 @@ export function DrawPage() {
         </button>
       </div>
       {!canAfford(1) ? (
-        <p className="text-center text-xs text-rose-300">錢包不夠，還差 {shortfall.toLocaleString()}。可去商店或做賽季任務。</p>
+        <p className="text-center text-xs text-rose-300">錢包不夠，還差 {shortfall.toLocaleString()}。可回櫃檯領津貼，或去商店。</p>
       ) : (
         <p className="text-center text-[11px] text-atelier-muted">電腦可按 1 / 0 快速拆 1 包或 10 包</p>
       )}
 
-      {showReveal && lastResult && best && (
+      {showReveal && lastResult && best && spotlight && (
         <section className="glass space-y-4 rounded-3xl p-4">
           <div className={`hit-banner rounded-2xl px-4 py-3 ${
             chase ? 'bg-gradient-to-r from-amber-400/30 to-fuchsia-400/20' : 'bg-white/5'
@@ -223,26 +253,43 @@ export function DrawPage() {
               {chase ? '追逐命中' : '這輪最佳'} · {HIT_LABEL[best.hitKind] ?? best.hitKind.toUpperCase()}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => handleDraw(lastCount)}
-            disabled={!canAfford(lastCount) || isDrawing}
-            className="glow-press min-h-12 w-full rounded-2xl bg-white font-semibold text-black"
-          >
-            再拆 {lastCount} 包 · {selectedPack.cost * lastCount}
-          </button>
-          {lastResult.packs.map((pack, i) => (
-            <div key={i} className="space-y-2">
-              <div className="text-xs uppercase tracking-wider text-atelier-warm">
-                第 {i + 1} 包 · {HIT_LABEL[pack.hitKind] ?? pack.hitKind.toUpperCase()}
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {pack.cards.map((card, j) => (
-                  <CardResultItem key={`${i}-${j}`} card={card} hit={j === pack.cards.length - 1} />
-                ))}
-              </div>
+          {lastResult.packs.length === 1 || step < 6 ? (
+            <div className="grid grid-cols-5 gap-2">
+              {spotlight.cards.map((card, index) => (
+                step > index ? (
+                  <CardResultItem key={`${card.cardId}-${index}`} card={card} hit={index === spotlight.cards.length - 1 && step >= 5} fill />
+                ) : (
+                  <div key={`back-${index}`} className="stage-back">夜箔</div>
+                )
+              ))}
             </div>
-          ))}
+          ) : null}
+          {step >= 6 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => handleDraw(lastCount)}
+                disabled={!canAfford(lastCount) || isDrawing}
+                className="glow-press min-h-12 w-full rounded-2xl bg-white font-semibold text-black"
+              >
+                再拆 {lastCount} 包 · {selectedPack.cost * lastCount}
+              </button>
+              {lastResult.packs.length > 1 ? (
+                lastResult.packs.map((pack, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="text-xs uppercase tracking-wider text-atelier-warm">
+                      第 {i + 1} 包 · {HIT_LABEL[pack.hitKind] ?? pack.hitKind.toUpperCase()}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {pack.cards.map((card, j) => (
+                        <CardResultItem key={`${i}-${j}`} card={card} hit={j === pack.cards.length - 1} />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : null}
+            </>
+          ) : null}
         </section>
       )}
     </div>
