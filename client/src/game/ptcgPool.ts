@@ -1,4 +1,5 @@
 import type { CardTemplate, Rarity } from '../cardData';
+import { OLDER_CARDS } from './olderCards';
 
 /** Full TCG card scans (frame, HP, attacks), not creature artwork. Public KADO card images for M6a. */
 const CARD = (file: string) =>
@@ -73,6 +74,15 @@ export const PTCG_TEMPLATES: PtcgTemplate[] = [
     imageUrl: VILEPLUME_CARD,
     dex: 45,
   },
+  ...OLDER_CARDS.map(([id, name, rarity, dex, imageUrl, series]) => ({
+    id,
+    name,
+    rarity,
+    icon: '🃏',
+    series,
+    imageUrl,
+    dex,
+  })),
 ];
 
 export function findPtcgTemplate(cardId: number): PtcgTemplate | undefined {
