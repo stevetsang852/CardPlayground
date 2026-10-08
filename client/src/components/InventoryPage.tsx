@@ -12,14 +12,6 @@ const RARITY_ORDER: Record<Rarity, number> = {
   common: 0, rare: 1, epic: 2, legendary: 3, mythic: 4,
 };
 
-const RARITY_BADGE: Record<Rarity, string> = {
-  common:    'bg-gray-700 text-gray-300',
-  rare:      'bg-blue-800 text-blue-200',
-  epic:      'bg-purple-800 text-purple-200',
-  legendary: 'bg-yellow-800 text-yellow-200',
-  mythic:    'bg-pink-800 text-pink-200',
-};
-
 function bestFoil(instances: ICardInstance[] | undefined, rarity: Rarity): string {
   if (!instances?.length) return foilForCard(undefined, rarity);
   return instances.reduce((best, card) => {
@@ -33,12 +25,10 @@ function CardFace({ cardId, rarity, foil, extraClass = '', count, onClick }: { c
   const grade = gradeForFoil(foil);
   return (
     <div className="card-container relative" onClick={onClick} style={{ cursor: 'pointer' }}>
-      <div className={`card inv-card ${rarity} ${extraClass} w-24 h-32 rounded-xl border-2 overflow-hidden bg-[#0e1830]`} data-rarity={foil} data-grade={grade}>
-        <div className="card__shine" />
-        <div className="card__glare" />
-        <img src={template.imageUrl} alt={template.name} className="absolute inset-0 w-full h-full object-contain pointer-events-none" style={{ zIndex: 1 }} />
-        <span className={`absolute bottom-1 left-1 text-[8px] px-1 rounded-full capitalize ${RARITY_BADGE[rarity]}`} style={{ zIndex: 6 }}>{template.name}</span>
+      <div className={`inv-card ptcg-card ptcg-card-sm ${rarity} ${extraClass}`} data-grade={grade}>
+        <img src={template.imageUrl} alt={template.name} className="scan-img" />
       </div>
+      <p className="scan-caption">{template.name}</p>
       {count !== undefined && count > 1 && (
         <span className="absolute top-1 right-1 text-[9px] bg-black/70 text-white rounded-full px-1 leading-4 z-10">x{count}</span>
       )}
@@ -136,10 +126,8 @@ export function InventoryPage() {
       {detail && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setDetailCardId(null)}>
           <div className="glass max-w-xs rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="card detail-card relative mx-auto overflow-hidden rounded-xl border-2" data-rarity={detailFoil} data-grade={gradeForFoil(detailFoil)}>
-              <div className="card__shine" />
-              <div className="card__glare" />
-              <img src={detail.imageUrl} alt={detail.name} className="w-full h-full object-contain" style={{ position: 'relative', zIndex: 1 }} />
+            <div className="detail-card ptcg-card ptcg-card-lg relative mx-auto" data-grade={gradeForFoil(detailFoil)}>
+              <img src={detail.imageUrl} alt={detail.name} className="scan-img" />
             </div>
             <div className="text-center mt-2 font-bold">{detail.name}</div>
             <div className="text-center text-xs text-atelier-muted">{detail.series} #{detail.id} · {gradeForFoil(detailFoil)}</div>

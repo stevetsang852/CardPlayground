@@ -40,22 +40,13 @@ function bestPack(result: DrawResult): OpenedPack | null {
 function CardResultItem({ card, hit, fill }: { card: ICardInstance; hit?: boolean; fill?: boolean }) {
   const template = findPtcgTemplate(card.cardId);
   const style = RARITY_STYLES[card.rarity];
-  const foil = card.foil || foilForCard(undefined, card.rarity);
-  const grade = gradeForFoil(foil);
+  const grade = gradeForFoil(card.foil || foilForCard(undefined, card.rarity));
   return (
     <div className={`card-container ${hit ? 'hit-card' : ''} ${fill ? 'w-full' : ''}`}>
-      <div className={`card drawn-card ptcg-card ${fill ? '' : 'ptcg-card-sm'} ${card.rarity} ${hit ? 'ring-2 ring-atelier-warm' : ''}`} data-rarity={foil} data-grade={grade} style={fill ? { width: '100%' } : undefined}>
-        <div className="card__shine" />
-        <div className="card__glare" />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 4, borderRadius: 10, overflow: 'hidden' }}>
-          {template?.imageUrl ? (
-            <img src={template.imageUrl} alt={template.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', zIndex: 1, background: '#0e1830' }} />
-          ) : null}
-          <span className={`relative font-bold ${style.text}`} style={{ fontSize: 8, zIndex: 6, background: 'rgba(0,0,0,0.55)', padding: '1px 4px', borderRadius: 4 }}>
-            {hit ? 'HIT · ' : ''}{template?.name ?? `#${card.cardId}`}
-          </span>
-        </div>
+      <div className={`drawn-card ptcg-card ${fill ? '' : 'ptcg-card-sm'} ${card.rarity} ${hit ? 'ring-2 ring-atelier-warm' : ''}`} data-grade={grade}>
+        <img src={template?.imageUrl} alt={template?.name ?? 'card'} className="scan-img" />
       </div>
+      <p className={`scan-caption ${style.text}`}>{hit ? 'HIT · ' : ''}{template?.name ?? `#${card.cardId}`}</p>
     </div>
   );
 }
