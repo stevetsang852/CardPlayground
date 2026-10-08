@@ -5,7 +5,7 @@ import { type Rarity } from '../cardData';
 import { findPtcgTemplate } from '../game/ptcgPool';
 import type { ICardInstance } from '../db';
 import { PackOpenAnimation, type DrawnCardInfo } from '../animations';
-import { foilForCard } from '../game/foilMap';
+import { foilForCard, gradeForFoil } from '../game/foilMap';
 
 const PACK_TONE: Record<string, string> = {
   basic: '',
@@ -50,9 +50,10 @@ function CardResultItem({ card, hit }: { card: ICardInstance; hit?: boolean }) {
   const template = findPtcgTemplate(card.cardId);
   const style = RARITY_STYLES[card.rarity];
   const foil = card.foil || foilForCard(undefined, card.rarity);
+  const grade = gradeForFoil(foil);
   return (
     <div className={`card-container ${hit ? 'hit-card' : ''}`}>
-      <div className={`card drawn-card ptcg-card ptcg-card-sm ${card.rarity} ${hit ? 'ring-2 ring-atelier-warm' : ''}`} data-rarity={foil}>
+      <div className={`card drawn-card ptcg-card ptcg-card-sm ${card.rarity} ${hit ? 'ring-2 ring-atelier-warm' : ''}`} data-rarity={foil} data-grade={grade}>
         <div className="card__shine" />
         <div className="card__glare" />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 4, borderRadius: 10, overflow: 'hidden' }}>

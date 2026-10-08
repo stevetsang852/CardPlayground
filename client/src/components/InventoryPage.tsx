@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import type { Rarity } from '../cardData';
 import { PTCG_TEMPLATES, findPtcgTemplate } from '../game/ptcgPool';
 import type { ICardInstance } from '../db/CardGameDB';
+import { foilForCard, gradeForFoil, GRADE_RANK } from '../game/foilMap';
 
 type Tab = 'inventory' | 'catalog';
 type SortKey = 'obtained' | 'rarity' | 'name';
@@ -19,13 +20,24 @@ const RARITY_BADGE: Record<Rarity, string> = {
   mythic:    'bg-pink-800 text-pink-200',
 };
 
-function CardFace({ cardId, rarity, extraClass = '', count, onClick }: { cardId: number; rarity: Rarity; extraClass?: string; count?: number; onClick?: () => void }) {
+function bestFoil(instances: ICardInstance[] | undefined, rarity: Rarity): string {
+  if (!instances?.length) return foilForCard(undefined, rarity);
+  return instances.reduce((best, card) => {
+    const foil = card.foil || foilForCard(undefined, card.rarity);
+    return (GRADE_RANK[gradeForFoil(foil)] ?? 0) > (GRADE_RANK[gradeForFoil(best)] ?? 0) ? foil : best;
+  }, instances[0]?.foil || foilForCard(undefined, rarity));
+}
+
+function CardFace({ cardId, rarity, foil, extraClass = '', count, onClick }: { cardId: number; rarity: Rarity; foil: string; extraClass?: string; count?: number; onClick?: () => void }) {
   const template = findPtcgTemplate(cardId) || PTCG_TEMPLATES[0]!;
+  const grade = gradeForFoil(foil);
   return (
     <div className="card-container relative" onClick={onClick} style={{ cursor: 'pointer' }}>
-      <div className={`inv-card ${rarity} ${extraClass} w-24 h-32 rounded-xl border-2 overflow-hidden bg-[#0e1830]`}>
-        <img src={template.imageUrl} alt={template.name} className="w-full h-full object-contain pointer-events-none" />
-        <span className={`absolute bottom-1 left-1 text-[8px] px-1 rounded-full capitalize ${RARITY_BADGE[rarity]}`}>{template.name}</span>
+      <div className={`card inv-card ${rarity} ${extraClass} w-24 h-32 rounded-xl border-2 overflow-hidden bg-[#0e1830]`} data-rarity={foil} data-grade={grade}>
+        <div className="card__shine" />
+        <div className="card__glare" />
+        <img src={template.imageUrl} alt={template.name} className="absolute inset-0 w-full h-full object-contain pointer-events-none" style={{ zIndex: 1 }} />
+        <span className={`absolute bottom-1 left-1 text-[8px] px-1 rounded-full capitalize ${RARITY_BADGE[rarity]}`} style={{ zIndex: 6 }}>{template.name}</span>
       </div>
       {count !== undefined && count > 1 && (
         <span className="absolute top-1 right-1 text-[9px] bg-black/70 text-white rounded-full px-1 leading-4 z-10">x{count}</span>
@@ -74,6 +86,7 @@ export function InventoryPage() {
   }, [filtered, instancesByCardId, sortKey]);
 
   const detail = detailCardId !== null ? findPtcgTemplate(detailCardId) : undefined;
+  const detailFoil = detail ? bestFoil(instancesByCardId.get(detail.id), detail.rarity) : 'common';
 
   return (
     <div className="pb-4 text-atelier-text">
@@ -109,15 +122,27 @@ export function InventoryPage() {
           </div>
         )}
         {(tab === 'inventory' ? inventoryCards : filtered).map((template) => (
-          <CardFace key={template.id} cardId={template.id} rarity={template.rarity} count={instancesByCardId.get(template.id)?.length} onClick={() => setDetailCardId(template.id)} extraClass={instancesByCardId.has(template.id) ? '' : 'opacity-30'} />
+          <CardFace
+            key={template.id}
+            cardId={template.id}
+            rarity={template.rarity}
+            foil={bestFoil(instancesByCardId.get(template.id), template.rarity)}
+            count={instancesByCardId.get(template.id)?.length}
+            onClick={() => setDetailCardId(template.id)}
+            extraClass={instancesByCardId.has(template.id) ? '' : 'opacity-30'}
+          />
         ))}
       </div>
       {detail && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setDetailCardId(null)}>
           <div className="glass max-w-xs rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
-            <img src={detail.imageUrl} alt={detail.name} className="w-48 h-48 object-contain mx-auto" />
+            <div className="card detail-card relative mx-auto overflow-hidden rounded-xl border-2" data-rarity={detailFoil} data-grade={gradeForFoil(detailFoil)}>
+              <div className="card__shine" />
+              <div className="card__glare" />
+              <img src={detail.imageUrl} alt={detail.name} className="w-full h-full object-contain" style={{ position: 'relative', zIndex: 1 }} />
+            </div>
             <div className="text-center mt-2 font-bold">{detail.name}</div>
-            <div className="text-center text-xs text-atelier-muted">{detail.series} #{detail.id}</div>
+            <div className="text-center text-xs text-atelier-muted">{detail.series} #{detail.id} · {gradeForFoil(detailFoil)}</div>
           </div>
         </div>
       )}

@@ -5,6 +5,7 @@ import './index.css';
 import './atelier.css';
 import './card-effects.css';
 import './vendor/pokemon-cards-css/index.css';
+import './foil-grades.css';
 import './ptcg-card.css';
 import './card-tilt';
 
