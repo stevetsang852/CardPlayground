@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './atelier.css';
+import './seal.css';
 import './card-effects.css';
 import './vendor/pokemon-cards-css/index.css';
 import './foil-grades.css';

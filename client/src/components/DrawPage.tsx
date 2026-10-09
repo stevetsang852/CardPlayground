@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { PackSeal } from './PackSeal';
 import { useGameStore } from '../store/gameStore';
 import { drawCards, PACK_CONFIGS, type PackConfig, type DrawResult, type OpenedPack } from '../game/DrawService';
 import { type Rarity } from '../cardData';
@@ -70,6 +71,7 @@ export function DrawPage() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
   const [step, setStep] = useState(6);
+  const [torn, setTorn] = useState(false);
   const [skipMotion, setSkipMotion] = useState(() => localStorage.getItem('cardplayground.skipReveal') === '1');
   const [muted, setMuted] = useState(() => localStorage.getItem('cardplayground.muted') === '1');
 
@@ -87,6 +89,7 @@ export function DrawPage() {
     if (!canAfford(packCount) || isDrawing) return;
     setIsDrawing(true);
     setShowReveal(false);
+    setTorn(false);
     setLastCount(packCount);
     const result = drawCards(selectedPack, packCount, player, activeEvents);
     setPlayer(result.updatedPlayer);
@@ -94,12 +97,15 @@ export function DrawPage() {
     incrementActionCount();
     const best = bestPack(result);
     const rank = best ? HIT_RANK[best.hitKind] ?? 0 : 0;
-    playPackTone(rank >= 6 ? 'chase' : rank >= 5 ? 'hit' : 'tick', muted);
     const reduced = skipMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setTorn(reduced);
     setLastResult(result);
     setShowReveal(true);
     setStep(reduced ? 6 : 0);
-    if (reduced) setIsDrawing(false);
+    if (reduced) {
+      playPackTone(rank >= 6 ? 'chase' : rank >= 5 ? 'hit' : 'tick', muted);
+      setIsDrawing(false);
+    }
   }, [canAfford, isDrawing, selectedPack, player, activeEvents, setPlayer, addCards, incrementActionCount, skipMotion, muted]);
 
   useEffect(() => {
@@ -109,7 +115,7 @@ export function DrawPage() {
   }, [handleDraw]);
 
   useEffect(() => {
-    if (!showReveal || !lastResult) return;
+    if (!showReveal || !lastResult || !torn) return;
     const reduced = skipMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) {
       setStep(6);
@@ -128,13 +134,18 @@ export function DrawPage() {
       if (next !== last) {
         last = next;
         setStep(next);
+        if (next === 5) {
+          const shown = bestPack(lastResult);
+          const shownRank = shown ? HIT_RANK[shown.hitKind] ?? 0 : 0;
+          playPackTone(shownRank >= 6 ? 'chase' : shownRank >= 5 ? 'hit' : 'tick', muted);
+        }
         if (next === 6) setIsDrawing(false);
       }
       if (next < 6) frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [showReveal, lastResult, skipMotion]);
+  }, [showReveal, lastResult, skipMotion, torn, muted]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -173,7 +184,7 @@ export function DrawPage() {
             }}
             className="min-h-11 rounded-full bg-white/10 px-3 text-xs text-atelier-muted"
           >
-            {聲音} {muted ? '關' : '開'}
+            聲音 {muted ? '關' : '開'}
           </button>
           <button
             type="button"
@@ -186,7 +197,7 @@ export function DrawPage() {
               skipMotion ? 'bg-white text-black' : 'bg-white/10 text-atelier-muted'
             }`}
           >
-            {跳過動畫} {skipMotion ? '開' : '關'}
+            跳過動畫 {skipMotion ? '開' : '關'}
           </button>
         </div>
       </header>
@@ -238,10 +249,18 @@ export function DrawPage() {
       {!canAfford(1) ? (
         <p className="text-center text-xs text-rose-300">錢包不夠，還差 {shortfall.toLocaleString()}。可回櫃檯領津貼，或去商店。</p>
       ) : (
-        <p className="text-center text-[11px] text-atelier-muted">電腦可按 1 / 0 快速拆 1 包或 10 包</p>
+        <p className="text-center text-[11px] text-atelier-muted">開包後按住頂部打橫掃開。電腦可按 1 / 0。</p>
       )}
 
-      {showReveal && lastResult && best && spotlight && (
+      {showReveal && lastResult && !torn && (
+        <PackSeal
+          tone={selectedPack.id === 'premium' ? 'tone-night' : selectedPack.id === 'legendary' ? 'tone-ember' : 'tone-foil'}
+          title={selectedPack.name.replace('JP ', '')}
+          onOpen={() => setTorn(true)}
+        />
+      )}
+
+      {showReveal && torn && lastResult && best && spotlight && (
         <section className="glass space-y-4 rounded-3xl p-4">
           <div className={`hit-banner rounded-2xl px-4 py-3 ${
             chase ? 'bg-gradient-to-r from-amber-400/30 to-fuchsia-400/20' : 'bg-white/5'
@@ -259,7 +278,7 @@ export function DrawPage() {
                 step > index ? (
                   <CardResultItem key={`${card.cardId}-${index}`} card={card} hit={index === spotlight.cards.length - 1 && step >= 5} fill />
                 ) : (
-                  <div key={`back-${index}`} className="stage-back">夜箔</div>
+                  <div key={`back-${index}`} className="stage-back">封</div>
                 )
               ))}
             </div>
